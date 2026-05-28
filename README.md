@@ -41,7 +41,12 @@ http://127.0.0.1:4173
 ## Cloudflare Pages 前端部署
 
 1. 只部署 `public` 目录，不要把项目根目录作为静态站点直接公开。
-2. 修改 `public/config.js`：
+2. 推荐在 Cloudflare Pages 设置：
+   - Build command：`npm run build:pages`
+   - Build output directory：`public`
+   - Environment variable：`LITEGANTT_API_BASE=https://你的-render-api地址`
+
+构建时会自动写入 `public/config.js`：
 
 ``` js
 window.LITEGANTT_API_BASE = 'https://你的-render-api地址';

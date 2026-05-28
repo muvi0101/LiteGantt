@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:pages": "node scripts/build-pages-config.mjs",
     "start": "node server.mjs"
   },
   "engines": {
