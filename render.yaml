@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: litegantt-api
+    env: docker
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ALLOWED_ORIGINS
+        sync: false

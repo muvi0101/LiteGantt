@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="author" content="Caius" />
+    <meta name="copyright" content="Original Work · Internal Use Only · Written Authorization Required" />
+    <meta name="code-fingerprint" content="Caius|Project Gantt Builder|2026|CGFB-2026-N7Q4-X1K8|ORIGINAL-WORK|INTERNAL-USE-ONLY" />
+    <title>项目甘特图生成器</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="code-fingerprint" aria-hidden="true" hidden data-author="Caius" data-project="Project Gantt Builder" data-fingerprint="CGFB-2026-N7Q4-X1K8" data-rights="ORIGINAL-WORK|INTERNAL-USE-ONLY"></div>
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-kicker">
+          <span class="brand-dot"></span>
+          <span>Delivery Plan Control</span>
+        </div>
+        <h1>计划即刻成图，交付尽在掌握</h1>
+        <p>实时预览 · Excel互通 · 里程碑管理</p>
+        <div class="brand-track" aria-hidden="true">
+          <i></i>
+          <i></i>
+          <i></i>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button id="importBtn" class="import-btn" type="button">
+          <span>导入 Excel</span>
+        </button>
+        <input id="importFile" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        <button id="generateBtn" class="primary-btn" type="button">
+          <span>生成 Excel</span>
+        </button>
+        <button id="imageBtn" class="download-btn" type="button">
+          <span>生成图片</span>
+        </button>
+        <div id="statusBox" class="status-box">待生成</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="plan-pane" aria-label="项目计划区域">
+        <section class="control-board">
+          <section class="panel control-panel command-panel">
+            <div class="command-section command-copy">
+              <span class="eyebrow">Plan Console</span>
+              <h2>阶段计划操作台</h2>
+              <p>从阶段开始组织计划，展开后维护任务明细与 Milestone。</p>
+              <div class="command-badges" aria-label="计划规则">
+                <span>自动取最早阶段日期</span>
+                <span>周视图实时联动</span>
+              </div>
+            </div>
+
+            <div class="command-section action-panel" aria-label="阶段操作">
+              <div class="action-stack">
+                <button id="addPhaseBtn" class="secondary-btn" type="button">添加阶段</button>
+                <button id="clearBtn" class="danger-btn" type="button">一键清空</button>
+                <button id="resetBtn" class="ghost-btn" type="button">恢复示例数据</button>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="workspace">
+          <div class="workspace-head">
+            <div>
+              <span class="eyebrow">Delivery Stages</span>
+              <h2>阶段编排</h2>
+            </div>
+            <span class="workspace-note">展开阶段后可编辑任务</span>
+          </div>
+          <div id="projectStats" class="project-stats"></div>
+          <section id="projectPulse" class="project-pulse" aria-label="项目节奏与阶段负载"></section>
+          <div id="phaseList" class="phase-list"></div>
+        </section>
+      </section>
+
+      <section class="panel preview-panel" aria-label="甘特图预览区域">
+        <div class="preview-head">
+          <div>
+            <span class="eyebrow">Live Gantt</span>
+            <h2>实时预览</h2>
+          </div>
+          <div class="preview-tools" aria-label="预览缩放控制">
+            <button id="fitPreviewBtn" class="zoom-btn active" type="button">全览</button>
+            <button id="readPreviewBtn" class="zoom-btn" type="button">阅读</button>
+            <button id="zoomOutBtn" class="zoom-icon-btn" type="button" aria-label="缩小">−</button>
+            <input id="zoomSlider" class="zoom-slider" type="range" min="20" max="140" step="1" value="100" aria-label="预览缩放比例" />
+            <button id="zoomInBtn" class="zoom-icon-btn" type="button" aria-label="放大">+</button>
+            <span id="zoomValue" class="zoom-value">100%</span>
+          </div>
+        </div>
+        <section class="overview-panel" aria-label="总体项目概览">
+          <div class="overview-head">
+            <div>
+              <span class="eyebrow">Project Summary</span>
+              <h3>总体项目概览</h3>
+            </div>
+          </div>
+          <div id="projectOverview" class="project-overview"></div>
+        </section>
+        <div class="preview-scroll">
+          <div id="previewCanvas" class="preview-canvas">
+            <div id="ganttPreview" class="gantt-preview"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer" aria-label="版权信息">
+      <div class="site-footer-card">
+        <strong>© 2026 Caius · Project Gantt Builder</strong>
+      </div>
+    </footer>
+
+    <template id="phaseTemplate">
+      <article class="phase-card">
+        <div class="phase-card-header">
+          <div class="phase-index"></div>
+          <div class="phase-fields">
+            <label>
+              <span>阶段名称</span>
+              <input data-field="name" type="text" />
+            </label>
+            <label>
+              <span>开始日期</span>
+              <input data-field="start" type="date" />
+            </label>
+            <label>
+              <span>结束日期</span>
+              <input data-field="end" type="date" />
+            </label>
+          </div>
+          <div class="phase-compact-summary"></div>
+          <div class="phase-tools">
+            <button class="phase-toggle" type="button">展开</button>
+            <button class="icon-btn delete-phase" type="button" aria-label="删除阶段">×</button>
+          </div>
+        </div>
+
+        <div class="phase-summary"></div>
+        <section class="task-detail-panel">
+          <div class="task-detail-head">
+            <div>
+              <span class="task-detail-eyebrow">Task Details</span>
+              <h3>任务明细</h3>
+            </div>
+            <button class="add-task secondary-btn" type="button">添加任务</button>
+          </div>
+          <div class="task-table">
+            <div class="task-row task-row-head">
+              <span>任务名称</span>
+              <span>开始日期</span>
+              <span>结束日期</span>
+              <span>节假日统计</span>
+              <span>Milestone</span>
+              <span></span>
+            </div>
+            <div class="task-list"></div>
+          </div>
+        </section>
+      </article>
+    </template>
+
+    <template id="taskTemplate">
+      <div class="task-row">
+        <label class="task-field task-name-field">
+          <span>任务名称</span>
+          <input data-field="name" type="text" />
+        </label>
+        <label class="task-field task-start-field">
+          <span>开始日期</span>
+          <input data-field="start" type="date" />
+        </label>
+        <label class="task-field task-end-field">
+          <span>结束日期</span>
+          <input data-field="end" type="date" />
+        </label>
+        <div class="task-field task-holiday-field">
+          <span>节假日统计</span>
+          <div class="holiday-stat" data-field="holidaySummary" data-tone="pending">
+            <strong data-role="holidayPrimary">待统计</strong>
+            <small data-role="holidaySecondary">补全日期</small>
+          </div>
+        </div>
+        <label class="task-field check-cell">
+          <span>Milestone</span>
+          <span class="check-control">
+          <input data-field="milestone" type="checkbox" />
+            <em>标记</em>
+          </span>
+        </label>
+        <button class="icon-btn delete-task" type="button" aria-label="删除任务">×</button>
+      </div>
+    </template>
+
+    <script src="/config.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
