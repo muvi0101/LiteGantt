@@ -1082,6 +1082,18 @@ function apiUrl(path) {
   return `${API_BASE}${path}`;
 }
 
+function requestExportKey(format) {
+  const formatName = format === 'png' ? '图片' : 'Excel';
+  const exportKey = window.prompt(`请输入${formatName}导出密钥。每个密钥只能使用 1 次。`, '');
+  if (exportKey === null) return null;
+  const normalizedKey = exportKey.trim();
+  if (!normalizedKey) {
+    setStatus('请输入导出密钥后再导出。', 'error');
+    return null;
+  }
+  return normalizedKey;
+}
+
 function setGenerating(format, busy) {
   const activeButton = format === 'png' ? imageBtn : generateBtn;
   generateBtn.disabled = busy;
@@ -1100,6 +1112,9 @@ function setImporting(busy) {
 }
 
 async function generate(format = 'xlsx') {
+  const exportKey = requestExportKey(format);
+  if (!exportKey) return;
+
   setGenerating(format, true);
   setStatus(formatLabels[format].status);
 
@@ -1107,7 +1122,7 @@ async function generate(format = 'xlsx') {
     const response = await fetch(apiUrl('/api/generate'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...toPayload(), format }),
+      body: JSON.stringify({ ...toPayload(), format, exportKey }),
     });
 
     if (!response.ok) {

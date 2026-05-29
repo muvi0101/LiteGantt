@@ -30,6 +30,8 @@ http://127.0.0.1:4173
 2. 在 Render 新建 Blueprint 或 Web Service，使用本目录的 `render.yaml` / `Dockerfile`。
 3. 设置环境变量：
    - `ALLOWED_ORIGINS=https://你的前端域名`
+   - `UPSTASH_REDIS_REST_URL=你的 Upstash REST URL`
+   - `UPSTASH_REDIS_REST_TOKEN=你的 Upstash REST Token`
 4. 部署完成后，记录 Render 服务地址，例如：
    - `https://litegantt-api.onrender.com`
 
@@ -62,6 +64,28 @@ window.LITEGANTT_API_BASE = 'https://你的-render-api地址';
 - 项目阶段名称、开始日期、结束日期
 - 阶段下细分任务名称、开始日期、结束日期（限制在所属阶段范围内）
 - Milestone 标记
+
+## 一次性导出密钥
+
+导出 Excel 或 PNG 时，前端会要求用户输入导出密钥。后端会到 Upstash Redis 校验并立即消耗该密钥，同一个密钥第二次使用会失败。
+
+本地开发环境如果没有配置 Upstash，可以继续导出；Render 上 `NODE_ENV=production` 时会强制校验密钥。
+
+生成密钥：
+
+```bash
+UPSTASH_REDIS_REST_URL="你的 Upstash REST URL" \
+UPSTASH_REDIS_REST_TOKEN="你的 Upstash REST Token" \
+npm run keys:create -- 20
+```
+
+上面的命令会生成 20 个一次性密钥。密钥只会显示在命令输出里，请自行保存后发给需要导出的用户。
+
+可选：如果希望密钥自动过期，可以增加：
+
+```bash
+EXPORT_KEY_TTL_DAYS=30 npm run keys:create -- 20
+```
 
 ## 输出样式
 

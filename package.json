@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "build:pages": "node scripts/build-pages-config.mjs",
+    "keys:create": "node scripts/create-export-keys.mjs",
     "start": "node server.mjs"
   },
   "engines": {
