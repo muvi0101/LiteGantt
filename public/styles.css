@@ -1817,16 +1817,16 @@ input[readonly] {
 .task-row,
 .task-row-head {
   position: relative;
-  min-width: 960px;
+  min-width: 1040px;
   width: max-content;
   display: grid;
-  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 94px 106px 106px minmax(126px, 0.9fr) 92px 28px;
+  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 94px 86px 106px 106px minmax(126px, 0.9fr) 92px 28px;
   gap: 8px;
   align-items: end;
 }
 
 .task-row {
-  grid-template-areas: "name start end status owner-client owner-vendor holiday milestone delete";
+  grid-template-areas: "name start end status progress owner-client owner-vendor holiday milestone delete";
   padding: 8px 10px;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 255, 255, 0.74);
@@ -1919,6 +1919,10 @@ input[readonly] {
   grid-area: status;
 }
 
+.task-progress-field {
+  grid-area: progress;
+}
+
 .task-owner-client-field {
   grid-area: owner-client;
 }
@@ -1933,11 +1937,21 @@ input[readonly] {
 
 .task-row input[type="text"],
 .task-row input[type="date"],
+.task-row input[type="number"],
 .task-row select {
   height: 34px;
   min-width: 0;
   padding: 0 8px;
   font-size: 12px;
+}
+
+.task-row select[data-field="status"] {
+  border-color: color-mix(in srgb, var(--status-color, #94a3b8) 42%, rgba(142, 142, 147, 0.2));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--status-color, #94a3b8) 14%, transparent), rgba(255, 255, 255, 0.96)),
+    #fff;
+  color: color-mix(in srgb, var(--status-color, #64748b) 72%, #111827);
+  font-weight: 850;
 }
 
 .task-row input[type="date"] {
@@ -2374,6 +2388,7 @@ input[readonly] {
       "start"
       "end"
       "status"
+      "progress"
       "owner-client"
       "owner-vendor"
       "holiday"
@@ -2402,6 +2417,7 @@ input[readonly] {
 
   .task-row input[type="text"],
   .task-row input[type="date"],
+  .task-row input[type="number"],
   .task-row select,
   .holiday-stat,
   .check-control {
