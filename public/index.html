@@ -73,7 +73,6 @@
             <span class="workspace-note">展开阶段后可编辑任务</span>
           </div>
           <div id="projectStats" class="project-stats"></div>
-          <section id="projectPulse" class="project-pulse" aria-label="项目节奏与阶段负载"></section>
           <div id="phaseList" class="phase-list"></div>
         </section>
       </section>
@@ -155,6 +154,8 @@
               <span>任务名称</span>
               <span>开始日期</span>
               <span>结束日期</span>
+              <span>负责人（甲方）</span>
+              <span>负责人（乙方）</span>
               <span>节假日统计</span>
               <span>Milestone</span>
               <span></span>
@@ -178,6 +179,14 @@
         <label class="task-field task-end-field">
           <span>结束日期</span>
           <input data-field="end" type="date" />
+        </label>
+        <label class="task-field task-owner-client-field">
+          <span>负责人（甲方）</span>
+          <input data-field="ownerClient" type="text" />
+        </label>
+        <label class="task-field task-owner-vendor-field">
+          <span>负责人（乙方）</span>
+          <input data-field="ownerVendor" type="text" />
         </label>
         <div class="task-field task-holiday-field">
           <span>节假日统计</span>

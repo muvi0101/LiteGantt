@@ -1091,6 +1091,7 @@ input[readonly] {
 .preview-name,
 .preview-duration,
 .preview-holiday,
+.preview-owner,
 .preview-track {
   border-right: 1px solid #dbe5f1;
   border-bottom: 1px solid #dbe5f1;
@@ -1115,6 +1116,12 @@ input[readonly] {
   background: #e8eef6;
   color: #35516f;
   font-size: 13px;
+}
+
+.preview-owner-head {
+  background: #edf3fb;
+  color: #36506a;
+  font-size: 12px;
 }
 
 .preview-month {
@@ -1146,7 +1153,8 @@ input[readonly] {
 
 .preview-name,
 .preview-duration,
-.preview-holiday {
+.preview-holiday,
+.preview-owner {
   display: flex;
   align-items: center;
   min-height: 32px;
@@ -1175,6 +1183,16 @@ input[readonly] {
   white-space: nowrap;
 }
 
+.preview-owner {
+  overflow: hidden;
+  justify-content: flex-start;
+  background: #f8fbff;
+  color: #475569;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .preview-row-phase.preview-name {
   min-height: 36px;
   background: color-mix(in srgb, var(--phase-accent, var(--blue)) 12%, #fff);
@@ -1197,6 +1215,13 @@ input[readonly] {
   color: #35516f;
   font-size: 14px;
   font-weight: 850;
+}
+
+.preview-row-phase.preview-owner {
+  min-height: 36px;
+  background: color-mix(in srgb, var(--phase-accent, var(--blue)) 4%, #fbfdff);
+  color: #64748b;
+  font-weight: 760;
 }
 
 .preview-track {
@@ -1225,6 +1250,7 @@ input[readonly] {
 .preview-row-focused.preview-name,
 .preview-row-focused.preview-duration,
 .preview-row-focused.preview-holiday,
+.preview-row-focused.preview-owner,
 .preview-row-focused.preview-track {
   box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--phase-accent, var(--blue)) 8%, transparent);
 }
@@ -1287,7 +1313,7 @@ input[readonly] {
 
 .workspace {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   align-content: start;
   gap: 12px;
   min-width: 0;
@@ -1350,153 +1376,6 @@ input[readonly] {
   font-size: 16px;
   font-weight: 900;
   line-height: 1.1;
-}
-
-.project-pulse {
-  display: grid;
-  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
-  gap: 10px;
-}
-
-.pulse-card {
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid rgba(45, 63, 92, 0.13);
-  border-radius: 16px;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(0, 122, 255, 0.08), transparent 34%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(242, 247, 253, 0.78));
-  box-shadow: var(--tight-shadow);
-}
-
-.pulse-card-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.pulse-eyebrow {
-  color: var(--blue);
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.pulse-title {
-  color: var(--deep);
-  font-size: 13px;
-  font-weight: 900;
-  white-space: nowrap;
-}
-
-.rhythm-track {
-  display: flex;
-  gap: 4px;
-  height: 36px;
-  padding: 4px;
-  border: 1px solid rgba(45, 63, 92, 0.1);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  overflow: hidden;
-}
-
-.rhythm-segment {
-  flex: var(--segment-grow, 1) 1 0;
-  min-width: 30px;
-  border: 0;
-  border-radius: 999px;
-  background:
-    linear-gradient(135deg, var(--phase-accent, var(--blue)), color-mix(in srgb, var(--phase-accent, var(--blue)) 62%, #0f172a));
-  color: #fff;
-  font-size: 11px;
-  font-weight: 900;
-  box-shadow: 0 8px 16px color-mix(in srgb, var(--phase-accent, var(--blue)) 18%, transparent);
-  cursor: pointer;
-}
-
-.rhythm-segment:hover {
-  filter: saturate(1.12) brightness(1.03);
-  transform: translateY(-1px);
-}
-
-.rhythm-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 750;
-}
-
-.load-list {
-  display: grid;
-  gap: 8px;
-}
-
-.load-row {
-  display: grid;
-  grid-template-columns: minmax(64px, 0.8fr) minmax(90px, 1.2fr) 42px;
-  gap: 8px;
-  align-items: center;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
-.load-name {
-  min-width: 0;
-  overflow: hidden;
-  color: #334155;
-  font-size: 12px;
-  font-weight: 850;
-  text-align: left;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.load-bar {
-  position: relative;
-  height: 10px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: rgba(148, 163, 184, 0.17);
-}
-
-.load-bar i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: var(--load-width, 0%);
-  border-radius: inherit;
-  background:
-    linear-gradient(90deg, var(--phase-accent, var(--blue)), color-mix(in srgb, var(--phase-accent, var(--blue)) 62%, #fff));
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--phase-accent, var(--blue)) 22%, transparent);
-}
-
-.load-row strong {
-  color: color-mix(in srgb, var(--phase-accent, var(--blue)) 78%, #0f172a);
-  font-size: 12px;
-  font-weight: 900;
-  text-align: right;
-}
-
-.load-row:hover .load-name {
-  color: color-mix(in srgb, var(--phase-accent, var(--blue)) 78%, #0f172a);
-}
-
-.pulse-empty {
-  padding: 14px;
-  border: 1px dashed rgba(45, 63, 92, 0.18);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.65);
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
 }
 
 .phase-list {
@@ -1907,16 +1786,16 @@ input[readonly] {
 .task-row,
 .task-row-head {
   position: relative;
-  min-width: 652px;
+  min-width: 868px;
   width: max-content;
   display: grid;
-  grid-template-columns: minmax(128px, 0.88fr) 112px 112px minmax(126px, 0.9fr) 92px 28px;
+  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 106px 106px minmax(126px, 0.9fr) 92px 28px;
   gap: 8px;
   align-items: end;
 }
 
 .task-row {
-  grid-template-areas: "name start end holiday milestone delete";
+  grid-template-areas: "name start end owner-client owner-vendor holiday milestone delete";
   padding: 8px 10px;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 255, 255, 0.74);
@@ -2003,6 +1882,14 @@ input[readonly] {
 
 .task-end-field {
   grid-area: end;
+}
+
+.task-owner-client-field {
+  grid-area: owner-client;
+}
+
+.task-owner-vendor-field {
+  grid-area: owner-vendor;
 }
 
 .task-holiday-field {
@@ -2315,10 +2202,6 @@ input[readonly] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .project-pulse {
-    grid-template-columns: 1fr;
-  }
-
   .top-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2454,6 +2337,8 @@ input[readonly] {
       "name"
       "start"
       "end"
+      "owner-client"
+      "owner-vendor"
       "holiday"
       "milestone"
       "delete";
@@ -2497,9 +2382,5 @@ input[readonly] {
 
   .project-stats {
     grid-template-columns: 1fr;
-  }
-
-  .load-row {
-    grid-template-columns: minmax(56px, 0.8fr) minmax(72px, 1fr) 38px;
   }
 }

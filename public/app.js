@@ -90,7 +90,6 @@ const previewCanvas = document.querySelector('#previewCanvas');
 const ganttPreview = document.querySelector('#ganttPreview');
 const projectOverview = document.querySelector('#projectOverview');
 const projectStats = document.querySelector('#projectStats');
-const projectPulse = document.querySelector('#projectPulse');
 const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
@@ -568,76 +567,6 @@ function renderProjectStats() {
   });
 }
 
-function renderProjectPulse() {
-  projectPulse.textContent = '';
-
-  if (!state.phases.length) {
-    const empty = makeElement('div', 'pulse-empty', '添加阶段后，这里会显示项目节奏和阶段负载。');
-    projectPulse.append(empty);
-    return;
-  }
-
-  const start = getEarliestPhaseStart();
-  const end = getLatestPhaseEnd();
-  const totalDays = start && end ? daysInclusiveIso(start, end) : 0;
-  const maxTaskCount = Math.max(1, ...state.phases.map((phase) => phase.tasks.length));
-
-  const rhythm = makeElement('section', 'pulse-card rhythm-card');
-  const rhythmHead = makeElement('div', 'pulse-card-head');
-  rhythmHead.append(
-    makeElement('span', 'pulse-eyebrow', 'Project Rhythm'),
-    makeElement('strong', 'pulse-title', '项目节奏条'),
-  );
-
-  const rhythmTrack = makeElement('div', 'rhythm-track');
-  state.phases.forEach((phase, phaseIndex) => {
-    const accent = phaseAccents[phaseIndex % phaseAccents.length];
-    const days = phase.start && phase.end ? daysInclusiveIso(phase.start, phase.end) : 1;
-    const segment = makeElement('button', 'rhythm-segment', `P${phaseIndex + 1}`);
-    segment.type = 'button';
-    segment.dataset.phaseIndex = String(phaseIndex);
-    segment.style.setProperty('--phase-accent', accent);
-    segment.style.setProperty('--segment-grow', String(Math.max(1, days)));
-    segment.title = `${phase.name || `阶段 ${phaseIndex + 1}`} · ${days} 天`;
-    rhythmTrack.append(segment);
-  });
-
-  const rhythmMeta = makeElement('div', 'rhythm-meta');
-  rhythmMeta.append(
-    makeElement('span', '', start || '-'),
-    makeElement('span', '', totalDays ? `${totalDays} 天` : '-'),
-    makeElement('span', '', end || '-'),
-  );
-  rhythm.append(rhythmHead, rhythmTrack, rhythmMeta);
-
-  const load = makeElement('section', 'pulse-card load-card');
-  const loadHead = makeElement('div', 'pulse-card-head');
-  loadHead.append(
-    makeElement('span', 'pulse-eyebrow', 'Stage Load'),
-    makeElement('strong', 'pulse-title', '阶段负载'),
-  );
-  const loadList = makeElement('div', 'load-list');
-  state.phases.forEach((phase, phaseIndex) => {
-    const accent = phaseAccents[phaseIndex % phaseAccents.length];
-    const taskCount = phase.tasks.length;
-    const width = Math.max(8, Math.round((taskCount / maxTaskCount) * 100));
-    const row = makeElement('button', 'load-row');
-    row.type = 'button';
-    row.dataset.phaseIndex = String(phaseIndex);
-    row.style.setProperty('--phase-accent', accent);
-    row.style.setProperty('--load-width', `${width}%`);
-    row.innerHTML = `
-      <span class="load-name">${phase.name || `阶段 ${phaseIndex + 1}`}</span>
-      <span class="load-bar"><i></i></span>
-      <strong>${taskCount} 项</strong>
-    `;
-    loadList.append(row);
-  });
-  load.append(loadHead, loadList);
-
-  projectPulse.append(rhythm, load);
-}
-
 function renderRightPane() {
   renderProjectOverview();
   renderPreview();
@@ -699,7 +628,7 @@ function renderPreview() {
 
   const { projectStartValue, totalWeeks } = range;
   const rows = getPreviewRows();
-  ganttPreview.style.gridTemplateColumns = `250px 160px 110px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
+  ganttPreview.style.gridTemplateColumns = `250px 160px 110px 118px 118px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
 
   const title = makePreviewCell('preview-title', state.title || '甘特图 - 项目进度计划表（周视图）', '1 / -1', '1');
   ganttPreview.append(title);
@@ -707,12 +636,14 @@ function renderPreview() {
   ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '2 / 5'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '2 / 5'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-holiday-head', '节假日天数', '3', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（甲方）', '4', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（乙方）', '5', '2 / 5'));
 
   getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
     ganttPreview.append(makePreviewCell(
       'preview-month',
       band.label,
-      `${band.fromWeek + 3} / span ${band.toWeek - band.fromWeek + 1}`,
+      `${band.fromWeek + 5} / span ${band.toWeek - band.fromWeek + 1}`,
       '2',
     ));
   });
@@ -720,7 +651,7 @@ function renderPreview() {
   for (let weekIndex = 1; weekIndex <= totalWeeks; weekIndex += 1) {
     const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
     const weekEnd = addDaysIso(weekStart, 6);
-    const gridColumn = `${weekIndex + 3}`;
+    const gridColumn = `${weekIndex + 5}`;
     ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '3'));
     ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '4'));
   }
@@ -735,13 +666,17 @@ function renderPreview() {
     const nameCell = makePreviewCell(`preview-name${rowClass}${focusClass}`, displayName, '1', gridRow);
     const durationCell = makePreviewCell(`preview-duration${rowClass}${focusClass}`, durationText(item), '2', gridRow);
     const holidayCell = makePreviewCell(`preview-holiday${rowClass}${focusClass}`, holidayDaysText(item), '3', gridRow);
-    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `4 / span ${totalWeeks}`, gridRow);
+    const ownerClientCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerClient || '-'), '4', gridRow);
+    const ownerVendorCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerVendor || '-'), '5', gridRow);
+    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `6 / span ${totalWeeks}`, gridRow);
     nameCell.style.setProperty('--phase-accent', color);
     durationCell.style.setProperty('--phase-accent', color);
     holidayCell.style.setProperty('--phase-accent', color);
+    ownerClientCell.style.setProperty('--phase-accent', color);
+    ownerVendorCell.style.setProperty('--phase-accent', color);
     track.style.setProperty('--phase-accent', color);
     renderPreviewBar(track, item, projectStartValue);
-    ganttPreview.append(nameCell, durationCell, holidayCell, track);
+    ganttPreview.append(nameCell, durationCell, holidayCell, ownerClientCell, ownerVendorCell, track);
   });
   schedulePreviewZoom();
 }
@@ -872,7 +807,6 @@ function render() {
   state.title = state.title || DEFAULT_TITLE;
   phaseList.textContent = '';
   renderProjectStats();
-  renderProjectPulse();
 
   state.phases.forEach((phase, phaseIndex) => {
     const phaseNode = phaseTemplate.content.firstElementChild.cloneNode(true);
@@ -1018,6 +952,8 @@ function render() {
         name: '新任务',
         start,
         end: getDefaultTaskEnd(start, phase),
+        ownerClient: '',
+        ownerVendor: '',
         endTouched: false,
         milestone: false,
       });
@@ -1044,6 +980,8 @@ function toPayload() {
         name: task.name,
         start: task.start,
         end: task.end,
+        ownerClient: String(task.ownerClient || '').trim(),
+        ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
       })),
@@ -1065,6 +1003,8 @@ function normalizeImportedProject(project) {
         name: String(task.name || `任务 ${taskIndex + 1}`).trim(),
         start: task.start || phase.start || '',
         end: task.end || task.start || phase.end || '',
+        ownerClient: String(task.ownerClient || '').trim(),
+        ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
       })),
@@ -1196,7 +1136,7 @@ document.querySelector('#addPhaseBtn').addEventListener('click', () => {
     name: '新阶段',
     start,
     end,
-    tasks: [{ name: '新任务', start, end, milestone: false }],
+    tasks: [{ name: '新任务', start, end, ownerClient: '', ownerVendor: '', milestone: false }],
   });
   focusPhase(state.phases.length - 1);
 });
@@ -1235,11 +1175,6 @@ projectOverview.addEventListener('click', (event) => {
   if (!card) return;
   const phaseIndex = Number(card.dataset.phaseIndex);
   togglePhaseFromOverview(phaseIndex);
-});
-projectPulse.addEventListener('click', (event) => {
-  const trigger = event.target.closest('[data-phase-index]');
-  if (!trigger) return;
-  togglePhaseFromOverview(Number(trigger.dataset.phaseIndex));
 });
 fitPreviewBtn.addEventListener('click', () => {
   previewZoomMode = 'fit';
