@@ -448,9 +448,16 @@ input[type="date"] {
   background: rgba(255, 255, 255, 0.86);
   color: var(--ink);
   padding: 0 11px;
+  text-align: left;
   outline: none;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+input[type="date"]::-webkit-date-and-time-value,
+input[type="date"]::-webkit-datetime-edit {
+  width: 100%;
+  text-align: left;
 }
 
 input[type="text"]:focus,
@@ -2012,6 +2019,7 @@ input[readonly] {
 
 .task-row input[type="date"] {
   letter-spacing: 0;
+  text-align: left;
 }
 
 .holiday-stat {
