@@ -132,6 +132,10 @@
               <span>结束日期</span>
               <input data-field="end" type="date" />
             </label>
+            <label>
+              <span>完成度 %</span>
+              <input data-field="progress" type="number" min="0" max="100" step="1" />
+            </label>
           </div>
           <div class="phase-compact-summary"></div>
           <div class="phase-tools">
@@ -154,6 +158,7 @@
               <span>任务名称</span>
               <span>开始日期</span>
               <span>结束日期</span>
+              <span>任务状态</span>
               <span>负责人（甲方）</span>
               <span>负责人（乙方）</span>
               <span>节假日统计</span>
@@ -179,6 +184,16 @@
         <label class="task-field task-end-field">
           <span>结束日期</span>
           <input data-field="end" type="date" />
+        </label>
+        <label class="task-field task-status-field">
+          <span>任务状态</span>
+          <select data-field="status">
+            <option value="未开始">未开始</option>
+            <option value="进行中">进行中</option>
+            <option value="已完成">已完成</option>
+            <option value="延期">延期</option>
+            <option value="暂停">暂停</option>
+          </select>
         </label>
         <label class="task-field task-owner-client-field">
           <span>负责人（甲方）</span>

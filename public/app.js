@@ -8,55 +8,60 @@ const defaultProject = {
       name: '示例阶段1',
       start: '2026-09-01',
       end: '2026-09-15',
+      progress: 100,
       tasks: [
-        { name: '阶段1-示例任务1', start: '2026-09-01', end: '2026-09-03' },
-        { name: '阶段1-示例任务2', start: '2026-09-04', end: '2026-09-08' },
-        { name: '阶段1-示例任务3', start: '2026-09-09', end: '2026-09-15' },
-        { name: '示例里程碑', start: '2026-09-15', end: '2026-09-15', milestone: true },
+        { name: '阶段1-示例任务1', start: '2026-09-01', end: '2026-09-03', status: '已完成' },
+        { name: '阶段1-示例任务2', start: '2026-09-04', end: '2026-09-08', status: '已完成' },
+        { name: '阶段1-示例任务3', start: '2026-09-09', end: '2026-09-15', status: '已完成' },
+        { name: '示例里程碑', start: '2026-09-15', end: '2026-09-15', status: '已完成', milestone: true },
       ],
     },
     {
       name: '示例阶段2',
       start: '2026-09-16',
       end: '2026-10-10',
+      progress: 65,
       tasks: [
-        { name: '阶段2-示例任务1', start: '2026-09-16', end: '2026-09-30' },
-        { name: '阶段2-示例任务2', start: '2026-09-16', end: '2026-09-23' },
-        { name: '阶段2-示例任务3', start: '2026-09-20', end: '2026-09-27' },
-        { name: '阶段2-示例任务4', start: '2026-09-30', end: '2026-10-09' },
-        { name: '示例里程碑', start: '2026-10-10', end: '2026-10-10', milestone: true },
+        { name: '阶段2-示例任务1', start: '2026-09-16', end: '2026-09-30', status: '进行中' },
+        { name: '阶段2-示例任务2', start: '2026-09-16', end: '2026-09-23', status: '已完成' },
+        { name: '阶段2-示例任务3', start: '2026-09-20', end: '2026-09-27', status: '进行中' },
+        { name: '阶段2-示例任务4', start: '2026-09-30', end: '2026-10-09', status: '未开始' },
+        { name: '示例里程碑', start: '2026-10-10', end: '2026-10-10', status: '未开始', milestone: true },
       ],
     },
     {
       name: '示例阶段3',
       start: '2026-10-11',
       end: '2026-10-30',
+      progress: 25,
       tasks: [
-        { name: '阶段3-示例任务1', start: '2026-10-11', end: '2026-10-18' },
-        { name: '阶段3-示例任务2', start: '2026-10-13', end: '2026-10-22' },
-        { name: '阶段3-示例任务3', start: '2026-10-19', end: '2026-10-29' },
-        { name: '示例里程碑', start: '2026-10-30', end: '2026-10-30', milestone: true },
+        { name: '阶段3-示例任务1', start: '2026-10-11', end: '2026-10-18', status: '进行中' },
+        { name: '阶段3-示例任务2', start: '2026-10-13', end: '2026-10-22', status: '未开始' },
+        { name: '阶段3-示例任务3', start: '2026-10-19', end: '2026-10-29', status: '未开始' },
+        { name: '示例里程碑', start: '2026-10-30', end: '2026-10-30', status: '未开始', milestone: true },
       ],
     },
     {
       name: '示例阶段4',
       start: '2026-10-31',
       end: '2026-11-14',
+      progress: 0,
       tasks: [
-        { name: '阶段4-示例任务1', start: '2026-10-31', end: '2026-11-03' },
-        { name: '阶段4-示例任务2', start: '2026-11-03', end: '2026-11-08' },
-        { name: '阶段4-示例任务3', start: '2026-11-05', end: '2026-11-12' },
-        { name: '阶段4-示例任务4', start: '2026-11-10', end: '2026-11-13' },
-        { name: '示例里程碑', start: '2026-11-14', end: '2026-11-14', milestone: true },
+        { name: '阶段4-示例任务1', start: '2026-10-31', end: '2026-11-03', status: '未开始' },
+        { name: '阶段4-示例任务2', start: '2026-11-03', end: '2026-11-08', status: '未开始' },
+        { name: '阶段4-示例任务3', start: '2026-11-05', end: '2026-11-12', status: '未开始' },
+        { name: '阶段4-示例任务4', start: '2026-11-10', end: '2026-11-13', status: '未开始' },
+        { name: '示例里程碑', start: '2026-11-14', end: '2026-11-14', status: '未开始', milestone: true },
       ],
     },
     {
       name: '示例阶段5',
       start: '2026-11-15',
       end: '2026-12-31',
+      progress: 0,
       tasks: [
-        { name: '阶段5-示例任务1', start: '2026-11-15', end: '2026-12-30' },
-        { name: '示例里程碑', start: '2026-12-31', end: '2026-12-31', milestone: true },
+        { name: '阶段5-示例任务1', start: '2026-11-15', end: '2026-12-30', status: '未开始' },
+        { name: '示例里程碑', start: '2026-12-31', end: '2026-12-31', status: '未开始', milestone: true },
       ],
     },
   ],
@@ -66,6 +71,7 @@ let state = structuredClone(defaultProject);
 
 const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
 const phaseAccents = ['#116acb', '#13a8c8', '#16a272', '#5f6df1', '#8b5cf6', '#d89419', '#e11d48'];
+const taskStatuses = ['未开始', '进行中', '已完成', '延期', '暂停'];
 const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
@@ -360,6 +366,17 @@ function sortTasksByStart(phase) {
   });
 }
 
+function normalizeTaskStatus(status) {
+  const normalized = String(status || '').trim();
+  return taskStatuses.includes(normalized) ? normalized : '未开始';
+}
+
+function normalizeProgress(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return 0;
+  return Math.round(clampNumber(number, 0, 100));
+}
+
 function daysInclusiveIso(start, end) {
   if (!isIsoDate(start) || !isIsoDate(end)) return 0;
   return Math.max(1, Math.round((dateSortValue(end) - dateSortValue(start)) / 86400000) + 1);
@@ -549,6 +566,9 @@ function renderProjectStats() {
   const phaseCount = state.phases.length;
   const taskCount = state.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
   const milestoneCount = state.phases.reduce((sum, phase) => sum + phase.tasks.filter((task) => task.milestone).length, 0);
+  const averageProgress = state.phases.length
+    ? Math.round(state.phases.reduce((sum, phase) => sum + normalizeProgress(phase.progress), 0) / state.phases.length)
+    : 0;
   const start = getEarliestPhaseStart();
   const end = getLatestPhaseEnd();
   const duration = start && end ? `${daysInclusiveIso(start, end)} 天` : '-';
@@ -557,6 +577,7 @@ function renderProjectStats() {
     ['任务', `${taskCount} 项`],
     ['周期', duration],
     ['里程碑', `${milestoneCount} 个`],
+    ['完成度', `${averageProgress}%`],
   ].forEach(([label, value]) => {
     const item = makeElement('div', 'stat-card');
     item.append(
@@ -628,7 +649,7 @@ function renderPreview() {
 
   const { projectStartValue, totalWeeks } = range;
   const rows = getPreviewRows();
-  ganttPreview.style.gridTemplateColumns = `250px 160px 110px 118px 118px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
+  ganttPreview.style.gridTemplateColumns = `250px 160px 110px 94px 118px 118px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
 
   const title = makePreviewCell('preview-title', state.title || '甘特图 - 项目进度计划表（周视图）', '1 / -1', '1');
   ganttPreview.append(title);
@@ -636,14 +657,15 @@ function renderPreview() {
   ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '2 / 5'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '2 / 5'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-holiday-head', '节假日天数', '3', '2 / 5'));
-  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（甲方）', '4', '2 / 5'));
-  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（乙方）', '5', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-status-head', '状态/完成度', '4', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（甲方）', '5', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-owner-head', '负责人（乙方）', '6', '2 / 5'));
 
   getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
     ganttPreview.append(makePreviewCell(
       'preview-month',
       band.label,
-      `${band.fromWeek + 5} / span ${band.toWeek - band.fromWeek + 1}`,
+      `${band.fromWeek + 6} / span ${band.toWeek - band.fromWeek + 1}`,
       '2',
     ));
   });
@@ -651,7 +673,7 @@ function renderPreview() {
   for (let weekIndex = 1; weekIndex <= totalWeeks; weekIndex += 1) {
     const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
     const weekEnd = addDaysIso(weekStart, 6);
-    const gridColumn = `${weekIndex + 5}`;
+    const gridColumn = `${weekIndex + 6}`;
     ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '3'));
     ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '4'));
   }
@@ -666,17 +688,19 @@ function renderPreview() {
     const nameCell = makePreviewCell(`preview-name${rowClass}${focusClass}`, displayName, '1', gridRow);
     const durationCell = makePreviewCell(`preview-duration${rowClass}${focusClass}`, durationText(item), '2', gridRow);
     const holidayCell = makePreviewCell(`preview-holiday${rowClass}${focusClass}`, holidayDaysText(item), '3', gridRow);
-    const ownerClientCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerClient || '-'), '4', gridRow);
-    const ownerVendorCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerVendor || '-'), '5', gridRow);
-    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `6 / span ${totalWeeks}`, gridRow);
+    const statusCell = makePreviewCell(`preview-status${rowClass}${focusClass}`, isPhase ? `${normalizeProgress(item.progress)}%` : normalizeTaskStatus(item.status), '4', gridRow);
+    const ownerClientCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerClient || '-'), '5', gridRow);
+    const ownerVendorCell = makePreviewCell(`preview-owner${rowClass}${focusClass}`, isPhase ? '-' : (item.ownerVendor || '-'), '6', gridRow);
+    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `7 / span ${totalWeeks}`, gridRow);
     nameCell.style.setProperty('--phase-accent', color);
     durationCell.style.setProperty('--phase-accent', color);
     holidayCell.style.setProperty('--phase-accent', color);
+    statusCell.style.setProperty('--phase-accent', color);
     ownerClientCell.style.setProperty('--phase-accent', color);
     ownerVendorCell.style.setProperty('--phase-accent', color);
     track.style.setProperty('--phase-accent', color);
     renderPreviewBar(track, item, projectStartValue);
-    ganttPreview.append(nameCell, durationCell, holidayCell, ownerClientCell, ownerVendorCell, track);
+    ganttPreview.append(nameCell, durationCell, holidayCell, statusCell, ownerClientCell, ownerVendorCell, track);
   });
   schedulePreviewZoom();
 }
@@ -824,6 +848,7 @@ function render() {
       makeElement('strong', 'phase-compact-name', phase.name || `阶段 ${phaseIndex + 1}`),
       makeElement('span', 'phase-compact-date', phase.start && phase.end ? `${phase.start} - ${phase.end}` : '-'),
       makeCompactMetric(`${phase.tasks.length} 项`),
+      makeCompactMetric(`完成 ${normalizeProgress(phase.progress)}%`),
       makeCompactMetric(`${milestoneCount} 个里程碑`),
     );
 
@@ -842,6 +867,7 @@ function render() {
     const phaseSummary = phaseNode.querySelector('.phase-summary');
     phaseSummary.append(
       makePhaseSummaryPill('周期', phase.start && phase.end ? `${phase.start} - ${phase.end}` : '-'),
+      makePhaseSummaryPill('完成度', `${normalizeProgress(phase.progress)}%`),
       makePhaseSummaryPill('任务', `${phase.tasks.length} 项`),
       makePhaseSummaryPill('里程碑', `${milestoneCount} 个`),
     );
@@ -859,6 +885,13 @@ function render() {
           phase[field] = input.value;
           normalizeTaskDates(phase);
           render();
+        });
+      } else if (field === 'progress') {
+        input.value = String(normalizeProgress(phase.progress));
+        input.addEventListener('input', () => {
+          phase.progress = normalizeProgress(input.value);
+          input.value = String(phase.progress);
+          renderRightPane();
         });
       } else {
         bindInput(input, () => phase[field], (value) => {
@@ -884,7 +917,7 @@ function render() {
     phase.tasks.forEach((task, taskIndex) => {
       const taskNode = taskTemplate.content.firstElementChild.cloneNode(true);
       updateHolidayStat(taskNode, task);
-      taskNode.querySelectorAll('input').forEach((input) => {
+      taskNode.querySelectorAll('input, select').forEach((input) => {
         const field = input.dataset.field;
         if (field === 'milestone') {
           input.checked = Boolean(task.milestone);
@@ -933,6 +966,12 @@ function render() {
             task.endTouched = true;
             render();
           });
+        } else if (field === 'status') {
+          input.value = normalizeTaskStatus(task.status);
+          input.addEventListener('change', () => {
+            task.status = normalizeTaskStatus(input.value);
+            renderRightPane();
+          });
         } else {
           bindInput(input, () => task[field], (value) => {
             task[field] = value;
@@ -952,6 +991,7 @@ function render() {
         name: '新任务',
         start,
         end: getDefaultTaskEnd(start, phase),
+        status: '未开始',
         ownerClient: '',
         ownerVendor: '',
         endTouched: false,
@@ -976,10 +1016,12 @@ function toPayload() {
       name: phase.name,
       start: phase.start,
       end: phase.end,
+      progress: normalizeProgress(phase.progress),
       tasks: phase.tasks.map((task) => ({
         name: task.name,
         start: task.start,
         end: task.end,
+        status: normalizeTaskStatus(task.status),
         ownerClient: String(task.ownerClient || '').trim(),
         ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
@@ -999,10 +1041,12 @@ function normalizeImportedProject(project) {
       name: String(phase.name || `阶段 ${phaseIndex + 1}`).trim(),
       start: phase.start || '',
       end: phase.end || '',
+      progress: normalizeProgress(phase.progress),
       tasks: (Array.isArray(phase.tasks) ? phase.tasks : []).map((task, taskIndex) => ({
         name: String(task.name || `任务 ${taskIndex + 1}`).trim(),
         start: task.start || phase.start || '',
         end: task.end || task.start || phase.end || '',
+        status: normalizeTaskStatus(task.status),
         ownerClient: String(task.ownerClient || '').trim(),
         ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
@@ -1136,7 +1180,8 @@ document.querySelector('#addPhaseBtn').addEventListener('click', () => {
     name: '新阶段',
     start,
     end,
-    tasks: [{ name: '新任务', start, end, ownerClient: '', ownerVendor: '', milestone: false }],
+    progress: 0,
+    tasks: [{ name: '新任务', start, end, status: '未开始', ownerClient: '', ownerVendor: '', milestone: false }],
   });
   focusPhase(state.phases.length - 1);
 });

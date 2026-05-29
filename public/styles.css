@@ -48,7 +48,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -438,7 +439,9 @@ label span {
 }
 
 input[type="text"],
-input[type="date"] {
+input[type="date"],
+input[type="number"],
+select {
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -461,7 +464,9 @@ input[type="date"]::-webkit-datetime-edit {
 }
 
 input[type="text"]:focus,
-input[type="date"]:focus {
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus {
   border-color: rgba(0, 122, 255, 0.62);
   background: #fff;
   box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.14);
@@ -1091,6 +1096,7 @@ input[readonly] {
 .preview-name,
 .preview-duration,
 .preview-holiday,
+.preview-status,
 .preview-owner,
 .preview-track {
   border-right: 1px solid #dbe5f1;
@@ -1124,6 +1130,12 @@ input[readonly] {
   font-size: 12px;
 }
 
+.preview-status-head {
+  background: #edf8f3;
+  color: #166534;
+  font-size: 12px;
+}
+
 .preview-month {
   display: grid;
   place-items: center;
@@ -1154,6 +1166,7 @@ input[readonly] {
 .preview-name,
 .preview-duration,
 .preview-holiday,
+.preview-status,
 .preview-owner {
   display: flex;
   align-items: center;
@@ -1193,6 +1206,15 @@ input[readonly] {
   white-space: nowrap;
 }
 
+.preview-status {
+  justify-content: center;
+  background: #f4fbf7;
+  color: #166534;
+  font-size: 12px;
+  font-weight: 820;
+  white-space: nowrap;
+}
+
 .preview-row-phase.preview-name {
   min-height: 36px;
   background: color-mix(in srgb, var(--phase-accent, var(--blue)) 12%, #fff);
@@ -1224,6 +1246,14 @@ input[readonly] {
   font-weight: 760;
 }
 
+.preview-row-phase.preview-status {
+  min-height: 36px;
+  background: color-mix(in srgb, var(--phase-accent, var(--green)) 7%, #f7fcfa);
+  color: color-mix(in srgb, var(--phase-accent, var(--green)) 72%, #166534);
+  font-size: 14px;
+  font-weight: 900;
+}
+
 .preview-track {
   position: relative;
   min-height: 32px;
@@ -1250,6 +1280,7 @@ input[readonly] {
 .preview-row-focused.preview-name,
 .preview-row-focused.preview-duration,
 .preview-row-focused.preview-holiday,
+.preview-row-focused.preview-status,
 .preview-row-focused.preview-owner,
 .preview-row-focused.preview-track {
   box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--phase-accent, var(--blue)) 8%, transparent);
@@ -1349,7 +1380,7 @@ input[readonly] {
 
 .project-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(126px, 1fr));
   gap: 8px;
 }
 
@@ -1786,16 +1817,16 @@ input[readonly] {
 .task-row,
 .task-row-head {
   position: relative;
-  min-width: 868px;
+  min-width: 960px;
   width: max-content;
   display: grid;
-  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 106px 106px minmax(126px, 0.9fr) 92px 28px;
+  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 94px 106px 106px minmax(126px, 0.9fr) 92px 28px;
   gap: 8px;
   align-items: end;
 }
 
 .task-row {
-  grid-template-areas: "name start end owner-client owner-vendor holiday milestone delete";
+  grid-template-areas: "name start end status owner-client owner-vendor holiday milestone delete";
   padding: 8px 10px;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 255, 255, 0.74);
@@ -1884,6 +1915,10 @@ input[readonly] {
   grid-area: end;
 }
 
+.task-status-field {
+  grid-area: status;
+}
+
 .task-owner-client-field {
   grid-area: owner-client;
 }
@@ -1897,7 +1932,8 @@ input[readonly] {
 }
 
 .task-row input[type="text"],
-.task-row input[type="date"] {
+.task-row input[type="date"],
+.task-row select {
   height: 34px;
   min-width: 0;
   padding: 0 8px;
@@ -2337,6 +2373,7 @@ input[readonly] {
       "name"
       "start"
       "end"
+      "status"
       "owner-client"
       "owner-vendor"
       "holiday"
@@ -2365,6 +2402,7 @@ input[readonly] {
 
   .task-row input[type="text"],
   .task-row input[type="date"],
+  .task-row select,
   .holiday-stat,
   .check-control {
     width: 100%;
