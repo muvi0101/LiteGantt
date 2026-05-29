@@ -282,7 +282,7 @@ button {
 .command-panel {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(330px, 0.82fr);
+  grid-template-columns: minmax(210px, 1fr) minmax(190px, 0.76fr);
   gap: 16px;
   align-items: stretch;
   background:
@@ -353,7 +353,7 @@ button {
 .action-panel {
   display: grid;
   align-content: center;
-  min-width: min(100%, 300px);
+  min-width: 0;
   padding-left: 6px;
 }
 
@@ -369,6 +369,9 @@ button {
   height: 46px;
   margin-top: 0;
   border-radius: 14px;
+  min-width: 0;
+  padding: 0 10px;
+  white-space: nowrap;
 }
 
 .action-stack .secondary-btn {
@@ -2236,6 +2239,33 @@ input[readonly] {
   .workspace {
     min-height: 0;
     overflow: visible;
+  }
+}
+
+@media (max-width: 1280px) {
+  .command-panel {
+    grid-template-columns: minmax(210px, 1fr) minmax(156px, 0.58fr);
+    gap: 12px;
+  }
+
+  .command-panel::after {
+    inset: 12px auto 12px 53%;
+  }
+
+  .action-stack {
+    grid-template-columns: 1fr;
+  }
+
+  .action-stack .secondary-btn,
+  .action-stack .danger-btn,
+  .action-stack .ghost-btn {
+    grid-column: 1 / -1;
+    height: 40px;
+    white-space: nowrap;
+  }
+
+  .action-stack .secondary-btn {
+    min-height: 46px;
   }
 }
 
