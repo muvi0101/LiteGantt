@@ -423,6 +423,7 @@ h3 {
 .field,
 .phase-fields label {
   display: grid;
+  min-width: 0;
   gap: 6px;
 }
 
@@ -439,6 +440,8 @@ label span {
 input[type="text"],
 input[type="date"] {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   height: 38px;
   border: 1px solid rgba(142, 142, 147, 0.24);
   border-radius: 10px;
@@ -2375,6 +2378,15 @@ input[readonly] {
     grid-template-columns: 40px minmax(0, 1fr);
   }
 
+  .phase-card.expanded .phase-fields {
+    grid-column: 1 / -1;
+  }
+
+  .phase-fields input[type="date"] {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
   .phase-tools {
     grid-column: 1 / -1;
     justify-content: flex-end;
@@ -2400,6 +2412,73 @@ input[readonly] {
   .phase-compact-name {
     min-width: 0;
     flex: 1 1 100%;
+  }
+
+  .task-detail-panel {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .task-table {
+    display: block;
+    overflow: visible;
+  }
+
+  .task-row-head {
+    display: none;
+  }
+
+  .task-list {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .task-row {
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "name"
+      "start"
+      "end"
+      "holiday"
+      "milestone"
+      "delete";
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--soft-line);
+    border-radius: 12px;
+  }
+
+  .task-row:not(.task-row-head) .task-field {
+    gap: 5px;
+  }
+
+  .task-row:not(.task-row-head) .task-field > span:not(.check-control) {
+    position: static;
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    clip-path: none;
+    white-space: normal;
+  }
+
+  .task-row input[type="text"],
+  .task-row input[type="date"],
+  .holiday-stat,
+  .check-control {
+    width: 100%;
+  }
+
+  .delete-task {
+    justify-self: end;
   }
 }
 
