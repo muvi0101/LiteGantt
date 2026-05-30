@@ -639,9 +639,7 @@ function renderPreviewBar(track, item, projectStartValue) {
   const exactWidthPx = (durationDays * PREVIEW_WEEK_WIDTH) / 7;
   const shellWidthPx = Math.max(12, exactWidthPx + 4);
   const fillWidthPx = Math.max(8, exactWidthPx - (item.kind === 'phase' ? 4 : 6));
-  const color = item.kind === 'sub'
-    ? taskStatusColor(item.status)
-    : phaseAccents[item.phaseIndex % phaseAccents.length];
+  const color = phaseAccents[item.phaseIndex % phaseAccents.length];
 
   const shell = document.createElement('span');
   shell.className = 'preview-bar-shell';
@@ -1026,8 +1024,6 @@ function render() {
         end: getDefaultTaskEnd(start, phase),
         status: '未开始',
         progress: 0,
-        ownerClient: '',
-        ownerVendor: '',
         endTouched: false,
         milestone: false,
       });
@@ -1057,8 +1053,6 @@ function toPayload() {
         end: task.end,
         status: normalizeTaskStatus(task.status),
         progress: normalizeTaskProgress(task),
-        ownerClient: String(task.ownerClient || '').trim(),
-        ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
       })),
@@ -1082,8 +1076,6 @@ function normalizeImportedProject(project) {
         end: task.end || task.start || phase.end || '',
         status: normalizeTaskStatus(task.status),
         progress: normalizeTaskProgress(task),
-        ownerClient: String(task.ownerClient || '').trim(),
-        ownerVendor: String(task.ownerVendor || '').trim(),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
       })),
@@ -1215,7 +1207,7 @@ document.querySelector('#addPhaseBtn').addEventListener('click', () => {
     name: '新阶段',
     start,
     end,
-    tasks: [{ name: '新任务', start, end, status: '未开始', progress: 0, ownerClient: '', ownerVendor: '', milestone: false }],
+    tasks: [{ name: '新任务', start, end, status: '未开始', progress: 0, milestone: false }],
   });
   focusPhase(state.phases.length - 1);
 });

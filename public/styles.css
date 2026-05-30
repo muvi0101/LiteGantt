@@ -1817,16 +1817,16 @@ input[readonly] {
 .task-row,
 .task-row-head {
   position: relative;
-  min-width: 1040px;
+  min-width: 828px;
   width: max-content;
   display: grid;
-  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 94px 86px 106px 106px minmax(126px, 0.9fr) 92px 28px;
+  grid-template-columns: minmax(128px, 0.9fr) 112px 112px 94px 86px minmax(126px, 0.9fr) 92px 28px;
   gap: 8px;
   align-items: end;
 }
 
 .task-row {
-  grid-template-areas: "name start end status progress owner-client owner-vendor holiday milestone delete";
+  grid-template-areas: "name start end status progress holiday milestone delete";
   padding: 8px 10px;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 255, 255, 0.74);
@@ -1923,12 +1923,6 @@ input[readonly] {
   grid-area: progress;
 }
 
-.task-owner-client-field {
-  grid-area: owner-client;
-}
-
-.task-owner-vendor-field {
-  grid-area: owner-vendor;
 }
 
 .task-holiday-field {
@@ -2389,8 +2383,6 @@ input[readonly] {
       "end"
       "status"
       "progress"
-      "owner-client"
-      "owner-vendor"
       "holiday"
       "milestone"
       "delete";

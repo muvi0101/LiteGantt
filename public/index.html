@@ -36,6 +36,9 @@
         <button id="imageBtn" class="download-btn" type="button">
           <span>生成图片</span>
         </button>
+        <button id="previewGanttBtn" class="preview-btn" type="button">
+          <span>预览甘特图</span>
+        </button>
         <div id="statusBox" class="status-box">待生成</div>
       </div>
     </header>
@@ -76,37 +79,6 @@
           <div id="phaseList" class="phase-list"></div>
         </section>
       </section>
-
-      <section class="panel preview-panel" aria-label="甘特图预览区域">
-        <div class="preview-head">
-          <div>
-            <span class="eyebrow">Live Gantt</span>
-            <h2>实时预览</h2>
-          </div>
-          <div class="preview-tools" aria-label="预览缩放控制">
-            <button id="fitPreviewBtn" class="zoom-btn active" type="button">全览</button>
-            <button id="readPreviewBtn" class="zoom-btn" type="button">阅读</button>
-            <button id="zoomOutBtn" class="zoom-icon-btn" type="button" aria-label="缩小">−</button>
-            <input id="zoomSlider" class="zoom-slider" type="range" min="20" max="140" step="1" value="100" aria-label="预览缩放比例" />
-            <button id="zoomInBtn" class="zoom-icon-btn" type="button" aria-label="放大">+</button>
-            <span id="zoomValue" class="zoom-value">100%</span>
-          </div>
-        </div>
-        <section class="overview-panel" aria-label="总体项目概览">
-          <div class="overview-head">
-            <div>
-              <span class="eyebrow">Project Summary</span>
-              <h3>总体项目概览</h3>
-            </div>
-          </div>
-          <div id="projectOverview" class="project-overview"></div>
-        </section>
-        <div class="preview-scroll">
-          <div id="previewCanvas" class="preview-canvas">
-            <div id="ganttPreview" class="gantt-preview"></div>
-          </div>
-        </div>
-      </section>
     </main>
 
     <footer class="site-footer" aria-label="版权信息">
@@ -114,6 +86,128 @@
         <strong>© 2026 Caius · Project Gantt Builder</strong>
       </div>
     </footer>
+
+    <!-- Fullscreen Gantt Preview Modal -->
+    <div id="ganttModal" class="gantt-modal" aria-hidden="true">
+      <div class="gantt-modal-backdrop"></div>
+      <div class="gantt-modal-dialog">
+        <div class="gantt-modal-head">
+          <div>
+            <span class="eyebrow">Live Gantt</span>
+            <h2>甘特图全屏预览</h2>
+          </div>
+          <div class="gantt-modal-tools">
+            <div class="preview-tools" aria-label="预览缩放控制">
+              <button id="fitPreviewBtn" class="zoom-btn active" type="button">全览</button>
+              <button id="readPreviewBtn" class="zoom-btn" type="button">阅读</button>
+              <button id="zoomOutBtn" class="zoom-icon-btn" type="button" aria-label="缩小">−</button>
+              <input id="zoomSlider" class="zoom-slider" type="range" min="20" max="140" step="1" value="100" aria-label="预览缩放比例" />
+              <button id="zoomInBtn" class="zoom-icon-btn" type="button" aria-label="放大">+</button>
+              <span id="zoomValue" class="zoom-value">100%</span>
+            </div>
+            <button class="gantt-modal-close" type="button" aria-label="关闭预览">×</button>
+          </div>
+        </div>
+        <section class="gantt-modal-overview">
+          <div id="projectOverview" class="project-overview"></div>
+        </section>
+        <div class="gantt-modal-body">
+          <div class="preview-scroll">
+            <div id="previewCanvas" class="preview-canvas">
+              <div id="ganttPreview" class="gantt-preview"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Task Breakdown Drawer -->
+    <div id="breakdownDrawer" class="breakdown-drawer" aria-hidden="true">
+      <div class="breakdown-backdrop"></div>
+      <div class="breakdown-panel">
+        <div class="breakdown-head">
+          <div class="breakdown-title-area">
+            <span class="eyebrow">Task Breakdown</span>
+            <h3 id="breakdownTitle">任务拆解</h3>
+            <span id="breakdownSubtitle" class="breakdown-subtitle"></span>
+          </div>
+          <button class="breakdown-close" type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="breakdown-body">
+          <div class="breakdown-table-wrap">
+            <div class="breakdown-table-head">
+              <span class="bd-col-name">子任务名称</span>
+              <span class="bd-col-detail">任务详情</span>
+              <span class="bd-col-start">开始日期</span>
+              <span class="bd-col-end">结束日期</span>
+              <span class="bd-col-status">完成状态</span>
+              <span class="bd-col-client">负责人(甲)</span>
+              <span class="bd-col-vendor">负责人(乙)</span>
+              <span class="bd-col-priority">优先级</span>
+              <span class="bd-col-deps">前置依赖</span>
+              <span class="bd-col-actions"></span>
+            </div>
+            <div id="breakdownList" class="breakdown-list"></div>
+          </div>
+        </div>
+        <div class="breakdown-foot">
+          <button id="addSubtaskBtn" class="add-subtask-btn" type="button">+ 添加子任务</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subtask row template -->
+    <template id="subtaskTemplate">
+      <div class="breakdown-row">
+        <label class="bd-field bd-name-field">
+          <span>子任务名称</span>
+          <input data-field="name" type="text" />
+        </label>
+        <label class="bd-field bd-detail-field">
+          <span>任务详情</span>
+          <input data-field="detail" type="text" />
+        </label>
+        <label class="bd-field bd-start-field">
+          <span>开始日期</span>
+          <input data-field="start" type="date" />
+        </label>
+        <label class="bd-field bd-end-field">
+          <span>结束日期</span>
+          <input data-field="end" type="date" />
+        </label>
+        <label class="bd-field bd-status-field">
+          <span>完成状态</span>
+          <select data-field="status">
+            <option value="未开始">未开始</option>
+            <option value="进行中">进行中</option>
+            <option value="已完成">已完成</option>
+            <option value="已暂停">已暂停</option>
+            <option value="已取消">已取消</option>
+          </select>
+        </label>
+        <label class="bd-field bd-client-field">
+          <span>负责人(甲)</span>
+          <input data-field="ownerClient" type="text" />
+        </label>
+        <label class="bd-field bd-vendor-field">
+          <span>负责人(乙)</span>
+          <input data-field="ownerVendor" type="text" />
+        </label>
+        <label class="bd-field bd-priority-field">
+          <span>优先级</span>
+          <select data-field="priority">
+            <option value="高">高</option>
+            <option value="中" selected>中</option>
+            <option value="低">低</option>
+          </select>
+        </label>
+        <label class="bd-field bd-deps-field">
+          <span>前置依赖</span>
+          <select data-field="deps" multiple></select>
+        </label>
+        <button class="icon-btn delete-subtask" type="button" aria-label="删除子任务">×</button>
+      </div>
+    </template>
 
     <template id="phaseTemplate">
       <article class="phase-card">
@@ -156,10 +250,9 @@
               <span>结束日期</span>
               <span>任务状态</span>
               <span>完成度 %</span>
-              <span>负责人（甲方）</span>
-              <span>负责人（乙方）</span>
               <span>节假日统计</span>
               <span>Milestone</span>
+              <span></span>
               <span></span>
             </div>
             <div class="task-list"></div>
@@ -196,14 +289,6 @@
           <span>完成度 %</span>
           <input data-field="progress" type="number" min="0" max="100" step="1" />
         </label>
-        <label class="task-field task-owner-client-field">
-          <span>负责人（甲方）</span>
-          <input data-field="ownerClient" type="text" />
-        </label>
-        <label class="task-field task-owner-vendor-field">
-          <span>负责人（乙方）</span>
-          <input data-field="ownerVendor" type="text" />
-        </label>
         <div class="task-field task-holiday-field">
           <span>节假日统计</span>
           <div class="holiday-stat" data-field="holidaySummary" data-tone="pending">
@@ -218,6 +303,7 @@
             <em>标记</em>
           </span>
         </label>
+        <button class="breakdown-btn ghost-btn" type="button" aria-label="任务拆解">拆解</button>
         <button class="icon-btn delete-task" type="button" aria-label="删除任务">×</button>
       </div>
     </template>
