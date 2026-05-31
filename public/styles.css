@@ -2667,11 +2667,10 @@ input[readonly] {
   width: 100%;
   display: grid;
   grid-template-columns:
-    minmax(120px, 1.5fr)
+    minmax(140px, 1.65fr)
     minmax(92px, 0.9fr)
     minmax(92px, 0.9fr)
-    minmax(80px, 0.72fr)
-    minmax(70px, 0.66fr)
+    minmax(86px, 0.72fr)
     minmax(98px, 1.04fr)
     minmax(68px, 0.72fr)
     minmax(76px, 0.78fr)
@@ -2681,7 +2680,7 @@ input[readonly] {
 }
 
 .task-row {
-  grid-template-areas: "name start end status progress holiday milestone breakdown delete";
+  grid-template-areas: "name start end status holiday milestone breakdown delete";
   padding: 8px 10px;
   border-top: 1px solid var(--soft-line);
   background: rgba(255, 255, 255, 0.74);
@@ -2774,17 +2773,12 @@ input[readonly] {
   grid-area: status;
 }
 
-.task-progress-field {
-  grid-area: progress;
-}
-
 .task-holiday-field {
   grid-area: holiday;
 }
 
 .task-row input[type="text"],
 .task-row input[type="date"],
-.task-row input[type="number"],
 .task-row select {
   height: 34px;
   min-width: 0;
@@ -2792,13 +2786,23 @@ input[readonly] {
   font-size: 12px;
 }
 
-.task-row select[data-field="status"] {
-  border-color: color-mix(in srgb, var(--status-color, #94a3b8) 42%, rgba(142, 142, 147, 0.2));
+.task-status-display {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid color-mix(in srgb, var(--status-color, #94a3b8) 42%, rgba(142, 142, 147, 0.2));
+  border-radius: 10px;
   background:
     linear-gradient(90deg, color-mix(in srgb, var(--status-color, #94a3b8) 14%, transparent), rgba(255, 255, 255, 0.96)),
     #fff;
   color: color-mix(in srgb, var(--status-color, #64748b) 72%, #111827);
+  font-size: 12px;
   font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .task-row input[type="date"] {
@@ -3152,7 +3156,6 @@ input[readonly] {
       "start"
       "end"
       "status"
-      "progress"
       "holiday"
       "milestone"
       "breakdown"
@@ -3180,8 +3183,8 @@ input[readonly] {
 
   .task-row input[type="text"],
   .task-row input[type="date"],
-  .task-row input[type="number"],
   .task-row select,
+  .task-status-display,
   .holiday-stat,
   .check-control {
     width: 100%;
@@ -3419,7 +3422,6 @@ input[readonly] {
       "start"
       "end"
       "status"
-      "progress"
       "holiday"
       "milestone"
       "breakdown"
@@ -3447,8 +3449,8 @@ input[readonly] {
 
   .task-row input[type="text"],
   .task-row input[type="date"],
-  .task-row input[type="number"],
   .task-row select,
+  .task-status-display,
   .holiday-stat,
   .check-control {
     width: 100%;

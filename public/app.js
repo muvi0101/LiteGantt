@@ -66,20 +66,18 @@ let state = structuredClone(defaultProject);
 
 const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
 const phaseAccents = ['#116acb', '#13a8c8', '#16a272', '#5f6df1', '#8b5cf6', '#d89419', '#e11d48'];
-const taskStatuses = ['未开始', '进行中', '已完成', '延期', '暂停'];
+const taskStatuses = ['未开始', '进行中', '已完成', '延期'];
 const statusColorMap = {
   未开始: '#94a3b8',
   进行中: '#0ea5e9',
   已完成: '#16a34a',
   延期: '#ef4444',
-  暂停: '#f59e0b',
 };
 const statusDefaultProgress = {
   未开始: 0,
   进行中: 50,
   已完成: 100,
   延期: 40,
-  暂停: 50,
 };
 const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
@@ -547,11 +545,28 @@ function defaultProgressForStatus(status) {
   return statusDefaultProgress[normalizeTaskStatus(status)] ?? 0;
 }
 
+function getTaskBreakdownProgress(task) {
+  const subtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
+  if (!subtasks.length) return null;
+  const completedCount = subtasks.filter((subtask) => subtask.status === '已完成').length;
+  return Math.round((completedCount / subtasks.length) * 100);
+}
+
 function normalizeTaskProgress(task) {
-  if (task && task.progress !== undefined && task.progress !== null && task.progress !== '') {
-    return normalizeProgress(task.progress);
-  }
-  return defaultProgressForStatus(task?.status);
+  const breakdownProgress = getTaskBreakdownProgress(task);
+  if (breakdownProgress !== null) return breakdownProgress;
+  return 100;
+}
+
+function getTaskStatus(task) {
+  const subtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
+  if (!subtasks.length) return '已完成';
+
+  const progress = normalizeTaskProgress(task);
+  if (progress >= 100) return '已完成';
+  if (isIsoDate(task?.end) && compareIsoDates(task.end, getTodayIso()) < 0) return '延期';
+  const hasStartedSubtask = subtasks.some((subtask) => ['进行中', '已完成', '已暂停'].includes(subtask.status));
+  return progress > 0 || hasStartedSubtask ? '进行中' : '未开始';
 }
 
 function getPhaseProgress(phase) {
@@ -765,7 +780,7 @@ function getProjectTasks() {
 }
 
 function isTaskCompleted(task) {
-  return normalizeTaskStatus(task.status) === '已完成' || normalizeTaskProgress(task) >= 100;
+  return getTaskStatus(task) === '已完成' || normalizeTaskProgress(task) >= 100;
 }
 
 function countWorkdaysInclusive(start, end) {
@@ -773,38 +788,13 @@ function countWorkdaysInclusive(start, end) {
   return eachIsoDateBetween(start, end).filter((date) => !getHolidayMeta(date)).length;
 }
 
-function getTaskProgressReferenceDate(task) {
-  if (!isIsoDate(task.start)) return '';
-  const progress = normalizeTaskProgress(task);
-  if (progress <= 0) return '';
-
-  const end = isIsoDate(task.end) && compareIsoDates(task.end, task.start) >= 0
-    ? task.end
-    : task.start;
-
-  if (progress >= 100) return end;
-
-  const taskDays = daysInclusiveIso(task.start, end);
-  const offsetDays = Math.floor((taskDays - 1) * (progress / 100));
-  return addDaysIso(task.start, offsetDays);
-}
-
-function getProjectTimelineReference(start, end, tasks) {
+function getProjectTimelineReference(start, end) {
   const today = getTodayIso();
   if (!isIsoDate(start) || !isIsoDate(end)) {
     return { date: '', source: 'empty', label: '暂无项目周期' };
   }
 
   if (compareIsoDates(today, start) < 0) {
-    const progressDate = maxIsoDate(tasks.map(getTaskProgressReferenceDate));
-    if (progressDate) {
-      const date = clampIsoDate(progressDate, start, end);
-      return {
-        date,
-        source: 'progress',
-        label: `按任务进度推算至 ${fmtHealthDate(date)}`,
-      };
-    }
     return { date: start, source: 'planned', label: '计划周期尚未开始' };
   }
 
@@ -833,6 +823,14 @@ function getElapsedProjectDays(start, end, reference) {
   return clampNumber(daysInclusiveIso(start, reference.date), 0, totalDays);
 }
 
+function getRemainingProjectDays(start, end, reference) {
+  if (!isIsoDate(start) || !isIsoDate(end) || !isIsoDate(reference.date)) return 0;
+  if (reference.source === 'planned') return daysInclusiveIso(start, end);
+  if (reference.source === 'ended') return 0;
+  if (reference.source === 'calendar') return daysInclusiveIso(reference.date, end);
+  return 0;
+}
+
 function getRemainingWorkdays(start, end, reference) {
   if (!isIsoDate(start) || !isIsoDate(end) || !isIsoDate(reference.date)) return 0;
   const remainingStart = reference.source === 'planned'
@@ -854,9 +852,9 @@ function getProjectHealthMetrics() {
   const start = getEarliestPhaseStart();
   const end = getLatestPhaseEnd();
   const totalDays = start && end ? daysInclusiveIso(start, end) : 0;
-  const timelineReference = getProjectTimelineReference(start, end, tasks);
+  const timelineReference = getProjectTimelineReference(start, end);
   const elapsedDays = totalDays ? getElapsedProjectDays(start, end, timelineReference) : 0;
-  const remainingDays = totalDays ? Math.max(0, totalDays - elapsedDays) : 0;
+  const remainingDays = totalDays ? getRemainingProjectDays(start, end, timelineReference) : 0;
   const remainingWorkdays = totalDays ? getRemainingWorkdays(start, end, timelineReference) : 0;
   const today = getTodayIso();
   const overdueTasks = tasks.filter((task) => (
@@ -995,11 +993,11 @@ function renderProjectStats() {
   remainingCopy.append(
     makeElement('h3', '', '剩余工期'),
     makeElement('div', 'health-metric-value', `${metrics.remainingDays} 天`),
-    makeElement('div', 'health-metric-sub', `总 ${metrics.totalDays || '-'} 天 · 已消耗 ${metrics.elapsedDays} 天`),
+    makeElement('div', 'health-metric-sub', `总 ${metrics.totalDays || '-'} 天 · 已过 ${metrics.elapsedDays} 天 · 剩 ${metrics.remainingDays} 天`),
   );
   remainingCard.append(
     remainingCopy,
-    makeElement('span', 'metric-badge', `${metrics.remainingWorkdays} 个工作日`),
+    makeElement('span', 'metric-badge', `${metrics.remainingWorkdays} 个有效工作日`),
   );
 
   const milestonePercent = metrics.milestoneCount
@@ -1070,7 +1068,7 @@ function renderPreviewBar(track, item, projectStartValue) {
   fill.className = 'preview-bar-fill';
   fill.style.width = `${fillWidthPx}px`;
   fill.style.setProperty('--bar-color', color);
-  fill.title = item.kind === 'sub' ? normalizeTaskStatus(item.status) : `阶段完成度 ${normalizeProgress(item.progress)}%`;
+  fill.title = item.kind === 'sub' ? getTaskStatus(item) : `阶段完成度 ${normalizeProgress(item.progress)}%`;
   shell.append(fill);
   track.append(shell);
 
@@ -1352,6 +1350,18 @@ function render() {
     phase.tasks.forEach((task, taskIndex) => {
       const taskNode = taskTemplate.content.firstElementChild.cloneNode(true);
       updateHolidayStat(taskNode, task);
+      const computedStatus = getTaskStatus(task);
+      task.status = computedStatus;
+      task.progress = normalizeTaskProgress(task);
+      const statusDisplay = taskNode.querySelector('[data-field="status"]');
+      if (statusDisplay) {
+        statusDisplay.textContent = computedStatus;
+        statusDisplay.dataset.status = computedStatus;
+        statusDisplay.style.setProperty('--status-color', taskStatusColor(computedStatus));
+        statusDisplay.title = Array.isArray(task.subtasks) && task.subtasks.length
+          ? `由 ${task.subtasks.length} 项任务拆解自动计算`
+          : '暂无任务拆解，默认按已完成处理';
+      }
       taskNode.querySelectorAll('input, select').forEach((input) => {
         const field = input.dataset.field;
         if (field === 'milestone') {
@@ -1403,30 +1413,6 @@ function render() {
             task.endTouched = true;
             render();
           });
-        } else if (field === 'status') {
-          input.value = normalizeTaskStatus(task.status);
-          input.dataset.status = input.value;
-          input.style.setProperty('--status-color', taskStatusColor(input.value));
-          input.addEventListener('change', () => {
-            task.status = normalizeTaskStatus(input.value);
-            input.dataset.status = task.status;
-            input.style.setProperty('--status-color', taskStatusColor(task.status));
-            if (task.status === '已完成') task.progress = 100;
-            if (task.status === '未开始') task.progress = 0;
-            if (task.status === '进行中' && normalizeTaskProgress(task) === 0) task.progress = defaultProgressForStatus(task.status);
-            const progressInput = taskNode.querySelector('input[data-field="progress"]');
-            if (progressInput) progressInput.value = String(normalizeTaskProgress(task));
-            render();
-          });
-        } else if (field === 'progress') {
-          input.value = String(normalizeTaskProgress(task));
-          input.addEventListener('input', () => {
-            task.progress = normalizeProgress(input.value);
-            input.value = String(task.progress);
-            renderProjectStats();
-            renderRightPane();
-          });
-          input.addEventListener('change', render);
         } else {
           bindInput(input, () => task[field], (value) => {
             task[field] = value;
@@ -1481,7 +1467,7 @@ function toPayload() {
         name: task.name,
         start: task.start,
         end: task.end,
-        status: normalizeTaskStatus(task.status),
+        status: getTaskStatus(task),
         progress: normalizeTaskProgress(task),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
@@ -1515,7 +1501,7 @@ function normalizeImportedProject(project) {
         name: String(task.name || `任务 ${taskIndex + 1}`).trim(),
         start: task.start || phase.start || '',
         end: task.end || task.start || phase.end || '',
-        status: normalizeTaskStatus(task.status),
+        status: getTaskStatus(task),
         progress: normalizeTaskProgress(task),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,

@@ -47,7 +47,7 @@
             <div class="command-section command-copy">
               <span class="eyebrow">Plan Console</span>
               <h2>阶段计划操作台</h2>
-              <p>从阶段开始组织计划，展开后维护任务明细与 Milestone。</p>
+              <p>从阶段开始组织计划，展开后维护任务明细与里程碑。</p>
             </div>
 
             <div class="command-badges" aria-label="计划规则">
@@ -262,9 +262,8 @@
               <span>开始日期</span>
               <span>结束日期</span>
               <span>任务状态</span>
-              <span>完成度 %</span>
               <span>节假日统计</span>
-              <span>Milestone</span>
+              <span>里程碑</span>
               <span></span>
               <span></span>
             </div>
@@ -290,17 +289,7 @@
         </label>
         <label class="task-field task-status-field">
           <span>任务状态</span>
-          <select data-field="status">
-            <option value="未开始">未开始</option>
-            <option value="进行中">进行中</option>
-            <option value="已完成">已完成</option>
-            <option value="延期">延期</option>
-            <option value="暂停">暂停</option>
-          </select>
-        </label>
-        <label class="task-field task-progress-field">
-          <span>完成度 %</span>
-          <input data-field="progress" type="number" min="0" max="100" step="1" />
+          <strong class="task-status-display" data-field="status">未开始</strong>
         </label>
         <div class="task-field task-holiday-field">
           <span>节假日统计</span>
@@ -310,7 +299,7 @@
           </div>
         </div>
         <label class="task-field check-cell">
-          <span>Milestone</span>
+          <span>里程碑</span>
           <span class="check-control">
           <input data-field="milestone" type="checkbox" />
             <em>标记</em>
