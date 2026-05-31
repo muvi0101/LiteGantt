@@ -83,7 +83,7 @@ async function upstashCommand(command) {
   return payload.result;
 }
 
-async function consumeExportKey(rawExportKey) {
+async function validateExportKey(rawExportKey) {
   if (!upstashRedisUrl || !upstashRedisToken) {
     if (process.env.NODE_ENV !== 'production') return;
     throw new Error('导出密钥服务未配置，请先在 Render 设置 Upstash Redis 环境变量');
@@ -94,8 +94,8 @@ async function consumeExportKey(rawExportKey) {
   if (exportKey.length > 160) throw new Error('导出密钥过长');
 
   const redisKey = `${exportKeyPrefix}${hashExportKey(exportKey)}`;
-  const consumed = await upstashCommand(['GETDEL', redisKey]);
-  if (!consumed) throw new Error('导出密钥无效或已被使用');
+  const storedKey = await upstashCommand(['GET', redisKey]);
+  if (!storedKey) throw new Error('导出密钥无效或已过期');
 }
 
 function readLocalPage(targetPort, timeoutMs = 1200) {
@@ -186,7 +186,7 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'POST' && request.url === '/api/generate') {
       const payload = await readJsonBody(request);
       const format = payload.format === 'png' ? 'png' : 'xlsx';
-      await consumeExportKey(payload.exportKey);
+      await validateExportKey(payload.exportKey);
       const result = format === 'png'
         ? await generateGanttPng(payload, outputDir)
         : await generateGanttXlsx(payload, outputDir);

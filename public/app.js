@@ -1533,7 +1533,7 @@ function apiUrl(path) {
 
 function requestExportKey(format) {
   const formatName = format === 'png' ? '图片' : 'Excel';
-  const exportKey = window.prompt(`请输入${formatName}导出密钥。每个密钥只能使用 1 次。`, '');
+  const exportKey = window.prompt(`请输入${formatName}导出密钥。密钥在有效期内可重复使用。`, '');
   if (exportKey === null) return null;
   const normalizedKey = exportKey.trim();
   if (!normalizedKey) {
