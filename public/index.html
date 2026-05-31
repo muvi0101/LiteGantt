@@ -25,7 +25,7 @@
           <i></i>
         </div>
       </div>
-      <div class="top-actions">
+      <div class="top-actions" aria-label="输出操作">
         <button id="importBtn" class="import-btn" type="button">
           <span>导入 Excel</span>
         </button>
@@ -36,47 +36,59 @@
         <button id="imageBtn" class="download-btn" type="button">
           <span>生成图片</span>
         </button>
-        <button id="previewGanttBtn" class="preview-btn" type="button">
-          <span>预览甘特图</span>
-        </button>
         <div id="statusBox" class="status-box">待生成</div>
       </div>
     </header>
 
     <main class="layout">
-      <section class="plan-pane" aria-label="项目计划区域">
-        <section class="control-board">
-          <section class="panel control-panel command-panel">
+      <section class="plan-console" aria-label="项目计划区域">
+        <section class="panel control-panel command-panel left-console" aria-label="阶段计划操作台">
+          <div class="console-head">
             <div class="command-section command-copy">
               <span class="eyebrow">Plan Console</span>
               <h2>阶段计划操作台</h2>
               <p>从阶段开始组织计划，展开后维护任务明细与 Milestone。</p>
-              <div class="command-badges" aria-label="计划规则">
-                <span>自动取最早阶段日期</span>
-                <span>周视图实时联动</span>
-              </div>
             </div>
 
-            <div class="command-section action-panel" aria-label="阶段操作">
-              <div class="action-stack">
-                <button id="addPhaseBtn" class="secondary-btn" type="button">添加阶段</button>
-                <button id="clearBtn" class="danger-btn" type="button">一键清空</button>
-                <button id="resetBtn" class="ghost-btn" type="button">恢复示例数据</button>
+            <div class="command-badges" aria-label="计划规则">
+              <span>自动取最早阶段日期</span>
+              <span>周视图实时联动</span>
+            </div>
+          </div>
+
+          <div class="command-section action-panel" aria-label="阶段操作">
+            <div class="action-stack">
+              <button id="addPhaseBtn" class="secondary-btn" type="button">+ 添加阶段</button>
+              <button id="clearBtn" class="danger-btn" type="button">一键清空</button>
+              <button id="resetBtn" class="ghost-btn" type="button">恢复示例</button>
+            </div>
+          </div>
+
+          <section class="workspace">
+            <div class="workspace-head">
+              <div>
+                <span class="eyebrow">Delivery Stages</span>
+                <h2>阶段列表</h2>
+              </div>
+              <div class="workspace-head-actions">
+                <button id="previewGanttBtn" class="preview-btn workspace-preview-btn" type="button">
+                  <span>预览甘特图</span>
+                </button>
               </div>
             </div>
+            <div id="phaseList" class="phase-list"></div>
           </section>
         </section>
 
-        <section class="workspace">
-          <div class="workspace-head">
+        <section class="panel health-panel" aria-label="项目健康度">
+          <div class="health-panel-head">
             <div>
-              <span class="eyebrow">Delivery Stages</span>
-              <h2>阶段编排</h2>
+              <span class="eyebrow">Project Health</span>
+              <h2>项目健康度</h2>
             </div>
-            <span class="workspace-note">展开阶段后可编辑任务</span>
+            <span class="health-panel-note">按任务与里程碑自动计算</span>
           </div>
           <div id="projectStats" class="project-stats"></div>
-          <div id="phaseList" class="phase-list"></div>
         </section>
       </section>
     </main>
@@ -152,6 +164,7 @@
         </div>
         <div class="breakdown-foot">
           <button id="addSubtaskBtn" class="add-subtask-btn" type="button">+ 添加子任务</button>
+          <button id="completeBreakdownBtn" class="complete-breakdown-btn" type="button">完成</button>
         </div>
       </div>
     </div>
@@ -203,7 +216,7 @@
         </label>
         <label class="bd-field bd-deps-field">
           <span>前置依赖</span>
-          <select data-field="deps" multiple></select>
+          <select data-field="deps"></select>
         </label>
         <button class="icon-btn delete-subtask" type="button" aria-label="删除子任务">×</button>
       </div>

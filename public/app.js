@@ -99,11 +99,12 @@ const CODE_FINGERPRINT = Object.freeze({
 });
 
 const phaseList = document.querySelector('#phaseList');
-const previewPanel = document.querySelector('.preview-panel');
-const previewScroll = document.querySelector('.preview-scroll');
-const previewCanvas = document.querySelector('#previewCanvas');
-const ganttPreview = document.querySelector('#ganttPreview');
-const projectOverview = document.querySelector('#projectOverview');
+const ganttModal = document.querySelector('#ganttModal');
+const previewPanel = ganttModal ? ganttModal.querySelector('.gantt-modal-dialog') : null;
+const previewScroll = ganttModal ? ganttModal.querySelector('.preview-scroll') : null;
+const previewCanvas = ganttModal ? ganttModal.querySelector('#previewCanvas') : null;
+const ganttPreview = ganttModal ? ganttModal.querySelector('#ganttPreview') : null;
+const projectOverview = ganttModal ? ganttModal.querySelector('#projectOverview') : null;
 const projectStats = document.querySelector('#projectStats');
 const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
@@ -113,12 +114,13 @@ const generateBtn = document.querySelector('#generateBtn');
 const imageBtn = document.querySelector('#imageBtn');
 const importBtn = document.querySelector('#importBtn');
 const importFile = document.querySelector('#importFile');
-const fitPreviewBtn = document.querySelector('#fitPreviewBtn');
-const readPreviewBtn = document.querySelector('#readPreviewBtn');
-const zoomOutBtn = document.querySelector('#zoomOutBtn');
-const zoomInBtn = document.querySelector('#zoomInBtn');
-const zoomSlider = document.querySelector('#zoomSlider');
-const zoomValue = document.querySelector('#zoomValue');
+const previewGanttBtn = document.querySelector('#previewGanttBtn');
+const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
+const readPreviewBtn = ganttModal ? ganttModal.querySelector('#readPreviewBtn') : null;
+const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
+const zoomInBtn = ganttModal ? ganttModal.querySelector('#zoomInBtn') : null;
+const zoomSlider = ganttModal ? ganttModal.querySelector('#zoomSlider') : null;
+const zoomValue = ganttModal ? ganttModal.querySelector('#zoomValue') : null;
 
 let previewZoomMode = 'fit';
 let manualPreviewZoom = 1;
@@ -126,6 +128,157 @@ let currentPreviewZoom = 1;
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
+
+// Task breakdown drawer state
+let breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+const subtaskStatuses = ['未开始', '进行中', '已完成', '已暂停', '已取消'];
+const subtaskPriorities = ['高', '中', '低'];
+const subtaskStatusColors = {
+  '未开始': '#94a3b8',
+  '进行中': '#0ea5e9',
+  '已完成': '#16a34a',
+  '已暂停': '#f59e0b',
+  '已取消': '#9ca3af',
+};
+const subtaskPriorityColors = { '高': '#e11d48', '中': '#3b82f6', '低': '#64748b' };
+const breakdownDrawer = document.querySelector('#breakdownDrawer');
+const breakdownList = document.querySelector('#breakdownList');
+const breakdownTitle = document.querySelector('#breakdownTitle');
+const breakdownSubtitle = document.querySelector('#breakdownSubtitle');
+const addSubtaskBtn = document.querySelector('#addSubtaskBtn');
+const completeBreakdownBtn = document.querySelector('#completeBreakdownBtn');
+const subtaskTemplate = document.querySelector('#subtaskTemplate');
+
+function getSubtasks(phaseIndex, taskIndex) {
+  const task = state.phases[phaseIndex]?.tasks[taskIndex];
+  if (!task) return [];
+  if (!Array.isArray(task.subtasks)) task.subtasks = [];
+  return task.subtasks;
+}
+
+function ensureSubtaskDefaults(subtask, parentTask) {
+  subtask.name = String(subtask.name || '').trim() || '新子任务';
+  subtask.detail = subtask.detail || '';
+  subtask.start = subtask.start || parentTask?.start || '';
+  subtask.end = subtask.end || parentTask?.end || subtask.start || '';
+  subtask.status = subtaskStatuses.includes(subtask.status) ? subtask.status : '未开始';
+  subtask.ownerClient = subtask.ownerClient || '';
+  subtask.ownerVendor = subtask.ownerVendor || '';
+  subtask.priority = subtaskPriorities.includes(subtask.priority) ? subtask.priority : '中';
+  if (!Array.isArray(subtask.deps)) subtask.deps = [];
+}
+
+function openBreakdown(phaseIndex, taskIndex) {
+  breakdownOpen = { phaseIndex, taskIndex };
+  renderBreakdown();
+  breakdownDrawer.classList.add('open');
+  breakdownDrawer.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('breakdown-open');
+}
+
+function closeBreakdown() {
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  breakdownDrawer.classList.remove('open');
+  breakdownDrawer.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('breakdown-open');
+}
+
+function completeBreakdown() {
+  const { phaseIndex, taskIndex } = breakdownOpen;
+  closeBreakdown();
+  if (!Number.isInteger(phaseIndex) || !Number.isInteger(taskIndex)) return;
+  expandedPhaseIndexes.add(phaseIndex);
+  render();
+}
+
+function renderBreakdown() {
+  const { phaseIndex, taskIndex } = breakdownOpen;
+  const phase = state.phases[phaseIndex];
+  const task = phase?.tasks[taskIndex];
+  if (!phase || !task) return;
+  breakdownTitle.textContent = `任务拆解 · ${task.name || '未命名任务'}`;
+  breakdownSubtitle.textContent = `${phase.name} / ${task.start || ''} ~ ${task.end || ''}`;
+  if (!Array.isArray(task.subtasks)) task.subtasks = [];
+  breakdownList.textContent = '';
+  task.subtasks.forEach((subtask, subIndex) => {
+    ensureSubtaskDefaults(subtask, task);
+    const row = subtaskTemplate.content.firstElementChild.cloneNode(true);
+    row.style.setProperty('--status-color', subtaskStatusColors[subtask.status] || '#64748b');
+    row.querySelectorAll('input, select').forEach((input) => {
+      const field = input.dataset.field;
+      if (field === 'deps') {
+        // populate with other tasks in same phase (siblings + other subtasks)
+        input.textContent = '';
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.textContent = '无前置依赖';
+        input.append(emptyOption);
+        const candidates = [];
+        phase.tasks.forEach((siblingTask, sibIndex) => {
+          if (sibIndex !== taskIndex && siblingTask.name) {
+            candidates.push({ value: `task:${sibIndex}`, label: siblingTask.name });
+          }
+          if (sibIndex === taskIndex && Array.isArray(siblingTask.subtasks)) {
+            siblingTask.subtasks.forEach((st, stIdx) => {
+              if (stIdx !== subIndex && st.name) {
+                candidates.push({ value: `sub:${stIdx}`, label: `↳ ${st.name}` });
+              }
+            });
+          }
+        });
+        candidates.forEach((opt) => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          if ((subtask.deps || [])[0] === opt.value) option.selected = true;
+          input.append(option);
+        });
+        input.value = (subtask.deps || [])[0] || '';
+        input.addEventListener('change', () => {
+          subtask.deps = input.value ? [input.value] : [];
+        });
+      } else {
+        input.value = subtask[field] ?? '';
+        input.addEventListener('input', () => {
+          subtask[field] = input.value;
+          if (field === 'status') {
+            row.style.setProperty('--status-color', subtaskStatusColors[input.value] || '#64748b');
+          }
+        });
+      }
+    });
+    row.querySelector('.delete-subtask').addEventListener('click', () => {
+      task.subtasks.splice(subIndex, 1);
+      renderBreakdown();
+    });
+    breakdownList.append(row);
+  });
+}
+
+addSubtaskBtn.addEventListener('click', () => {
+  const { phaseIndex, taskIndex } = breakdownOpen;
+  const task = state.phases[phaseIndex]?.tasks[taskIndex];
+  if (!task) return;
+  if (!Array.isArray(task.subtasks)) task.subtasks = [];
+  const newSub = {
+    name: '新子任务',
+    detail: '',
+    start: task.start || '',
+    end: task.end || task.start || '',
+    status: '未开始',
+    ownerClient: '',
+    ownerVendor: '',
+    priority: '中',
+    deps: [],
+  };
+  task.subtasks.push(newSub);
+  renderBreakdown();
+});
+
+completeBreakdownBtn.addEventListener('click', completeBreakdown);
+breakdownDrawer.querySelector('.breakdown-close').addEventListener('click', closeBreakdown);
+breakdownDrawer.querySelector('.breakdown-backdrop').addEventListener('click', closeBreakdown);
+
 
 const formatLabels = {
   xlsx: { action: '生成 Excel', busy: '生成中...', done: '已生成并开始下载 Excel。', status: '正在生成 Excel，请稍候。' },
@@ -254,6 +407,10 @@ function fmtMd(value) {
   if (!isIsoDate(value)) return '';
   const [, month, day] = value.split('-').map(Number);
   return `${month}/${day}`;
+}
+
+function fmtHealthDate(value) {
+  return isIsoDate(value) ? value.replace(/-/g, '/') : '-';
 }
 
 function monthLabel(value) {
@@ -513,12 +670,15 @@ function setPreviewZoomLabel(zoom) {
   zoomValue.textContent = `${percent}%`;
   fitPreviewBtn.classList.toggle('active', previewZoomMode === 'fit');
   readPreviewBtn.classList.toggle('active', previewZoomMode === 'read');
-  previewPanel.classList.toggle('fit-mode', previewZoomMode === 'fit');
-  previewPanel.classList.toggle('read-mode', previewZoomMode === 'read');
-  previewPanel.classList.toggle('manual-mode', previewZoomMode === 'manual');
+  if (previewPanel) {
+    previewPanel.classList.toggle('fit-mode', previewZoomMode === 'fit');
+    previewPanel.classList.toggle('read-mode', previewZoomMode === 'read');
+    previewPanel.classList.toggle('manual-mode', previewZoomMode === 'manual');
+  }
 }
 
 function applyPreviewZoom() {
+  if (!previewCanvas || !ganttPreview) return;
   const contentWidth = ganttPreview.scrollWidth;
   const contentHeight = ganttPreview.scrollHeight;
   if (!contentWidth || !contentHeight) return;
@@ -565,6 +725,7 @@ function setManualPreviewZoom(nextZoom) {
 }
 
 function renderProjectOverview() {
+  if (!projectOverview) return;
   projectOverview.textContent = '';
 
   if (!state.phases.length) {
@@ -591,31 +752,290 @@ function renderProjectOverview() {
   projectOverview.append(strip);
 }
 
-function renderProjectStats() {
-  projectStats.textContent = '';
-  const phaseCount = state.phases.length;
-  const taskCount = state.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
-  const milestoneCount = state.phases.reduce((sum, phase) => sum + phase.tasks.filter((task) => task.milestone).length, 0);
-  const averageProgress = state.phases.length
-    ? Math.round(state.phases.reduce((sum, phase) => sum + getPhaseProgress(phase), 0) / state.phases.length)
+function getTodayIso() {
+  const now = new Date();
+  const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 10);
+}
+
+function getProjectTasks() {
+  return state.phases.flatMap((phase, phaseIndex) => (
+    phase.tasks.map((task, taskIndex) => ({ ...task, phase, phaseIndex, taskIndex }))
+  ));
+}
+
+function isTaskCompleted(task) {
+  return normalizeTaskStatus(task.status) === '已完成' || normalizeTaskProgress(task) >= 100;
+}
+
+function countWorkdaysInclusive(start, end) {
+  if (!isIsoDate(start) || !isIsoDate(end) || compareIsoDates(end, start) < 0) return 0;
+  return eachIsoDateBetween(start, end).filter((date) => !getHolidayMeta(date)).length;
+}
+
+function getTaskProgressReferenceDate(task) {
+  if (!isIsoDate(task.start)) return '';
+  const progress = normalizeTaskProgress(task);
+  if (progress <= 0) return '';
+
+  const end = isIsoDate(task.end) && compareIsoDates(task.end, task.start) >= 0
+    ? task.end
+    : task.start;
+
+  if (progress >= 100) return end;
+
+  const taskDays = daysInclusiveIso(task.start, end);
+  const offsetDays = Math.floor((taskDays - 1) * (progress / 100));
+  return addDaysIso(task.start, offsetDays);
+}
+
+function getProjectTimelineReference(start, end, tasks) {
+  const today = getTodayIso();
+  if (!isIsoDate(start) || !isIsoDate(end)) {
+    return { date: '', source: 'empty', label: '暂无项目周期' };
+  }
+
+  if (compareIsoDates(today, start) < 0) {
+    const progressDate = maxIsoDate(tasks.map(getTaskProgressReferenceDate));
+    if (progressDate) {
+      const date = clampIsoDate(progressDate, start, end);
+      return {
+        date,
+        source: 'progress',
+        label: `按任务进度推算至 ${fmtHealthDate(date)}`,
+      };
+    }
+    return { date: start, source: 'planned', label: '计划周期尚未开始' };
+  }
+
+  if (compareIsoDates(today, end) > 0) {
+    return {
+      date: end,
+      source: 'ended',
+      label: `计划周期已结束于 ${fmtHealthDate(end)}`,
+    };
+  }
+
+  return {
+    date: today,
+    source: 'calendar',
+    label: `按今日 ${fmtHealthDate(today)} 计算`,
+  };
+}
+
+function getElapsedProjectDays(start, end, reference) {
+  if (!isIsoDate(start) || !isIsoDate(end) || !isIsoDate(reference.date)) return 0;
+  const totalDays = daysInclusiveIso(start, end);
+  if (reference.source === 'planned') return 0;
+  if (reference.source === 'calendar') {
+    return clampNumber(daysInclusiveIso(start, reference.date) - 1, 0, totalDays);
+  }
+  return clampNumber(daysInclusiveIso(start, reference.date), 0, totalDays);
+}
+
+function getRemainingWorkdays(start, end, reference) {
+  if (!isIsoDate(start) || !isIsoDate(end) || !isIsoDate(reference.date)) return 0;
+  const remainingStart = reference.source === 'planned'
+    ? start
+    : reference.source === 'calendar'
+      ? reference.date
+      : addDaysIso(reference.date, 1);
+  if (!isIsoDate(remainingStart) || compareIsoDates(remainingStart, end) > 0) return 0;
+  return countWorkdaysInclusive(remainingStart, end);
+}
+
+function getProjectHealthMetrics() {
+  const tasks = getProjectTasks();
+  const milestones = tasks.filter((task) => task.milestone);
+  const completedMilestones = milestones.filter(isTaskCompleted);
+  const totalProgress = tasks.length
+    ? Math.round(tasks.reduce((sum, task) => sum + normalizeTaskProgress(task), 0) / tasks.length)
     : 0;
   const start = getEarliestPhaseStart();
   const end = getLatestPhaseEnd();
-  const duration = start && end ? `${daysInclusiveIso(start, end)} 天` : '-';
-  [
-    ['阶段', `${phaseCount} 个`],
-    ['任务', `${taskCount} 项`],
-    ['周期', duration],
-    ['里程碑', `${milestoneCount} 个`],
-    ['完成度', `${averageProgress}%`],
-  ].forEach(([label, value]) => {
-    const item = makeElement('div', 'stat-card');
-    item.append(
-      makeElement('span', 'stat-label', label),
-      makeElement('strong', 'stat-value', value),
-    );
-    projectStats.append(item);
+  const totalDays = start && end ? daysInclusiveIso(start, end) : 0;
+  const timelineReference = getProjectTimelineReference(start, end, tasks);
+  const elapsedDays = totalDays ? getElapsedProjectDays(start, end, timelineReference) : 0;
+  const remainingDays = totalDays ? Math.max(0, totalDays - elapsedDays) : 0;
+  const remainingWorkdays = totalDays ? getRemainingWorkdays(start, end, timelineReference) : 0;
+  const today = getTodayIso();
+  const overdueTasks = tasks.filter((task) => (
+    isIsoDate(task.end)
+    && compareIsoDates(task.end, today) < 0
+    && !isTaskCompleted(task)
+  ));
+
+  return {
+    totalProgress,
+    taskCount: tasks.length,
+    phaseCount: state.phases.length,
+    overdueCount: overdueTasks.length,
+    totalDays,
+    elapsedDays,
+    remainingDays,
+    remainingWorkdays,
+    milestoneCount: milestones.length,
+    completedMilestoneCount: completedMilestones.length,
+    timelineRatio: totalDays ? Math.round(clampNumber((elapsedDays / totalDays) * 100, 0, 100)) : 0,
+    timelineLabel: timelineReference.label,
+    timelineSource: timelineReference.source,
+  };
+}
+
+function makeHealthStat(label, value, detail, tone = '') {
+  const item = makeElement('div', `health-stat ${tone}`.trim());
+  item.append(
+    makeElement('span', 'health-label', label),
+    makeElement('strong', 'health-value', value),
+    makeElement('small', 'health-detail', detail),
+  );
+  return item;
+}
+
+function getProjectHealthTone(metrics) {
+  if (metrics.overdueCount > 0) {
+    return {
+      tone: 'risk',
+      label: '存在逾期',
+      detail: '优先处理逾期任务',
+    };
+  }
+
+  if (!metrics.totalDays || metrics.timelineRatio <= 0) {
+    return {
+      tone: 'ready',
+      label: '待启动',
+      detail: '计划周期尚未开始',
+    };
+  }
+
+  if (metrics.totalProgress + 8 < metrics.timelineRatio) {
+    return {
+      tone: 'watch',
+      label: '进度偏慢',
+      detail: `进度落后时间 ${metrics.timelineRatio - metrics.totalProgress}%`,
+    };
+  }
+
+  return {
+    tone: 'good',
+    label: '节奏正常',
+    detail: '当前计划健康运行',
+  };
+}
+
+function makeHealthPhaseFlow() {
+  const flow = makeElement('div', 'health-phase-flow');
+  state.phases.forEach((phase, phaseIndex) => {
+    const segment = makeElement('span', 'health-phase-segment');
+    const progress = getPhaseProgress(phase);
+    segment.style.setProperty('--phase-accent', phaseAccents[phaseIndex % phaseAccents.length]);
+    segment.style.setProperty('--phase-progress', `${progress}%`);
+    segment.title = `${phase.name || `阶段${phaseIndex + 1}`} · ${progress}%`;
+    segment.setAttribute('aria-label', segment.title);
+    flow.append(segment);
   });
+  return flow;
+}
+
+function renderProjectStats() {
+  projectStats.textContent = '';
+  const metrics = getProjectHealthMetrics();
+  const healthTone = getProjectHealthTone(metrics);
+  const healthNote = document.querySelector('.health-panel-note');
+  if (healthNote) {
+    healthNote.textContent = healthTone.label;
+    healthNote.dataset.tone = healthTone.tone;
+  }
+
+  const dashboard = makeElement('section', 'health-dashboard');
+  dashboard.dataset.tone = healthTone.tone;
+  dashboard.style.setProperty('--progress-ratio', `${metrics.totalProgress}%`);
+  dashboard.style.setProperty('--timeline-ratio', `${metrics.timelineRatio}%`);
+
+  const makeBar = (className, value) => {
+    const bar = makeElement('span', `health-bar ${className}`.trim());
+    const fill = makeElement('i', '');
+    fill.style.width = `${clampNumber(value, 0, 100)}%`;
+    bar.append(fill);
+    return bar;
+  };
+
+  const lag = Math.max(0, metrics.timelineRatio - metrics.totalProgress);
+  const paceHint = healthTone.tone === 'risk'
+    ? `存在 ${metrics.overdueCount} 项逾期任务，请优先处理。`
+    : healthTone.tone === 'watch'
+      ? `进度落后于时间消耗 ${lag}%，建议优先推进当前阶段关键任务。`
+      : healthTone.tone === 'ready'
+        ? '计划周期尚未开始，可先完善阶段与任务排期。'
+        : '进度与时间消耗匹配，当前节奏正常。';
+
+  const progressCard = makeElement('article', 'health-card health-compare-card');
+  progressCard.append(makeElement('h3', '', '进度对比'));
+  const progressRow = makeElement('div', 'bar-row');
+  progressRow.append(
+    makeElement('span', '', '任务进度'),
+    makeBar('', metrics.totalProgress),
+    makeElement('strong', '', `${metrics.totalProgress}%`),
+  );
+  const timeRow = makeElement('div', 'bar-row');
+  timeRow.append(
+    makeElement('span', '', '时间消耗'),
+    makeBar('time', metrics.timelineRatio),
+    makeElement('strong', '', `${metrics.timelineRatio}%`),
+  );
+  progressCard.append(
+    progressRow,
+    timeRow,
+    makeElement('div', 'health-hint', paceHint),
+  );
+
+  const remainingCard = makeElement('article', 'health-card health-metric-card');
+  const remainingCopy = makeElement('div', 'health-metric-copy');
+  remainingCopy.append(
+    makeElement('h3', '', '剩余工期'),
+    makeElement('div', 'health-metric-value', `${metrics.remainingDays} 天`),
+    makeElement('div', 'health-metric-sub', `总 ${metrics.totalDays || '-'} 天 · 已消耗 ${metrics.elapsedDays} 天`),
+  );
+  remainingCard.append(
+    remainingCopy,
+    makeElement('span', 'metric-badge', `${metrics.remainingWorkdays} 个工作日`),
+  );
+
+  const milestonePercent = metrics.milestoneCount
+    ? Math.round((metrics.completedMilestoneCount / metrics.milestoneCount) * 100)
+    : 0;
+  const milestoneCard = makeElement('article', 'health-card health-milestone-card');
+  const milestoneValue = makeElement('div', 'milestone-value-row');
+  milestoneValue.append(
+    makeElement('strong', 'milestone-ratio', metrics.milestoneCount ? `${metrics.completedMilestoneCount}/${metrics.milestoneCount}` : '暂无'),
+    makeElement('span', 'milestone-percent', metrics.milestoneCount ? `${milestonePercent}%` : '0%'),
+  );
+  const milestoneTrack = makeElement('div', 'milestone-track');
+  const milestoneFill = makeElement('i', '');
+  milestoneFill.style.width = `${milestonePercent}%`;
+  milestoneTrack.append(milestoneFill);
+  milestoneCard.append(
+    makeElement('h3', '', '里程碑达成'),
+    milestoneValue,
+    milestoneTrack,
+    makeElement('div', 'health-metric-sub', metrics.milestoneCount ? '需要加快后续里程碑关闭节奏' : '暂无里程碑'),
+  );
+
+  const overdueCard = makeElement('article', 'health-card health-metric-card overdue-card');
+  const overdueCopy = makeElement('div', 'health-metric-copy');
+  overdueCopy.append(
+    makeElement('h3', '', '逾期任务'),
+    makeElement('div', 'health-metric-value', `${metrics.overdueCount} 项`),
+    makeElement('div', 'health-metric-sub', metrics.overdueCount ? '存在逾期风险' : '当前无逾期风险'),
+  );
+  overdueCard.append(
+    overdueCopy,
+    makeElement('span', metrics.overdueCount ? 'overdue-risk' : 'overdue-ok', metrics.overdueCount ? '需处理' : '无风险'),
+  );
+
+  dashboard.append(progressCard, remainingCard, milestoneCard, overdueCard);
+  projectStats.append(dashboard);
 }
 
 function renderRightPane() {
@@ -672,6 +1092,7 @@ function renderPreviewBar(track, item, projectStartValue) {
 
 function renderPreview() {
   const range = getPreviewRange();
+  if (!ganttPreview) return;
   ganttPreview.textContent = '';
   if (!range) {
     ganttPreview.append(makePreviewCell('preview-empty', '请先录入项目阶段日期。'));
@@ -899,6 +1320,7 @@ function render() {
         input.addEventListener('input', () => {
           phase[field] = input.value;
           syncProjectStart();
+          renderProjectStats();
           renderRightPane();
         });
         input.addEventListener('change', () => {
@@ -951,6 +1373,7 @@ function render() {
               task.end = clampIsoDate(task.end, task.start, phase.end);
             }
             updateHolidayStat(taskNode, task);
+            renderProjectStats();
             renderRightPane();
           });
           input.addEventListener('change', () => {
@@ -972,6 +1395,7 @@ function render() {
             if (input.value !== task.end) input.value = task.end;
             task.endTouched = true;
             updateHolidayStat(taskNode, task);
+            renderProjectStats();
             renderRightPane();
           });
           input.addEventListener('change', () => {
@@ -1013,6 +1437,12 @@ function render() {
         phase.tasks.splice(taskIndex, 1);
         render();
       });
+      const breakdownBtn = taskNode.querySelector('.breakdown-btn');
+      if (breakdownBtn) {
+        const subtaskCount = Array.isArray(task.subtasks) ? task.subtasks.length : 0;
+        breakdownBtn.textContent = subtaskCount ? `拆解 ${subtaskCount}` : '任务拆解';
+        breakdownBtn.addEventListener('click', () => openBreakdown(phaseIndex, taskIndex));
+      }
       taskList.append(taskNode);
     });
 
@@ -1055,6 +1485,17 @@ function toPayload() {
         progress: normalizeTaskProgress(task),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
+        subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map((st) => ({
+          name: String(st.name || '').trim(),
+          detail: String(st.detail || '').trim(),
+          start: st.start || task.start || '',
+          end: st.end || task.end || '',
+          status: subtaskStatuses.includes(st.status) ? st.status : '未开始',
+          ownerClient: String(st.ownerClient || '').trim(),
+          ownerVendor: String(st.ownerVendor || '').trim(),
+          priority: subtaskPriorities.includes(st.priority) ? st.priority : '中',
+          deps: Array.isArray(st.deps) ? st.deps : [],
+        })),
       })),
     })),
   };
@@ -1078,6 +1519,17 @@ function normalizeImportedProject(project) {
         progress: normalizeTaskProgress(task),
         milestone: Boolean(task.milestone),
         markerGapPx: task.markerGapPx,
+        subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map((st) => ({
+          name: String(st.name || '').trim(),
+          detail: String(st.detail || '').trim(),
+          start: st.start || task.start || '',
+          end: st.end || task.end || '',
+          status: subtaskStatuses.includes(st.status) ? st.status : '未开始',
+          ownerClient: String(st.ownerClient || '').trim(),
+          ownerVendor: String(st.ownerVendor || '').trim(),
+          priority: subtaskPriorities.includes(st.priority) ? st.priority : '中',
+          deps: Array.isArray(st.deps) ? st.deps : [],
+        })),
       })),
     })),
   };
@@ -1241,23 +1693,55 @@ generateBtn.addEventListener('click', () => generate('xlsx'));
 imageBtn.addEventListener('click', () => generate('png'));
 importBtn.addEventListener('click', () => importFile.click());
 importFile.addEventListener('change', () => importExcel(importFile.files[0]));
-projectOverview.addEventListener('click', (event) => {
-  const card = event.target.closest('.overview-card');
-  if (!card) return;
-  const phaseIndex = Number(card.dataset.phaseIndex);
-  togglePhaseFromOverview(phaseIndex);
+if (projectOverview) {
+  projectOverview.addEventListener('click', (event) => {
+    const card = event.target.closest('.overview-card');
+    if (!card) return;
+    const phaseIndex = Number(card.dataset.phaseIndex);
+    togglePhaseFromOverview(phaseIndex);
+  });
+}
+// Gantt modal open/close
+function openGanttModal() {
+  if (!ganttModal) return;
+  ganttModal.classList.add('open');
+  ganttModal.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('gantt-modal-visible');
+  renderRightPane();
+  requestAnimationFrame(() => applyPreviewZoom());
+}
+function closeGanttModal() {
+  if (!ganttModal) return;
+  ganttModal.classList.remove('open');
+  ganttModal.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('gantt-modal-visible');
+}
+if (previewGanttBtn) previewGanttBtn.addEventListener('click', openGanttModal);
+if (ganttModal) {
+  const modalCloseBtn = ganttModal.querySelector('.gantt-modal-close');
+  if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeGanttModal);
+  const modalBackdrop = ganttModal.querySelector('.gantt-modal-backdrop');
+  if (modalBackdrop) modalBackdrop.addEventListener('click', closeGanttModal);
+}
+// ESC key closes modal
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape') {
+    if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
+    else if (breakdownDrawer && breakdownDrawer.classList.contains('open')) closeBreakdown();
+  }
 });
-fitPreviewBtn.addEventListener('click', () => {
+
+if (fitPreviewBtn) fitPreviewBtn.addEventListener('click', () => {
   previewZoomMode = 'fit';
   applyPreviewZoom();
 });
-readPreviewBtn.addEventListener('click', () => {
+if (readPreviewBtn) readPreviewBtn.addEventListener('click', () => {
   previewZoomMode = 'read';
   applyPreviewZoom();
 });
-zoomOutBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom - ZOOM_STEP));
-zoomInBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom + ZOOM_STEP));
-zoomSlider.addEventListener('input', () => setManualPreviewZoom(Number(zoomSlider.value) / 100));
+if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom - ZOOM_STEP));
+if (zoomInBtn) zoomInBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom + ZOOM_STEP));
+if (zoomSlider) zoomSlider.addEventListener('input', () => setManualPreviewZoom(Number(zoomSlider.value) / 100));
 window.addEventListener('resize', () => {
   if (previewZoomMode === 'fit' || previewZoomMode === 'read') applyPreviewZoom();
 });
