@@ -897,10 +897,6 @@ input[readonly] {
   align-content: stretch;
 }
 
-.preview-panel.read-mode {
-  grid-template-rows: auto auto minmax(280px, 1fr);
-}
-
 .preview-head {
   display: flex;
   align-items: center;
@@ -1281,9 +1277,7 @@ input[readonly] {
 
 .preview-scroll {
   min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable both-edges;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 13px;
   background:
@@ -1291,27 +1285,25 @@ input[readonly] {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
-.preview-panel.fit-mode .preview-scroll {
+.gantt-modal-dialog.fit-mode .preview-scroll {
   height: 100%;
   max-height: none;
-  overflow: auto;
 }
 
-.preview-panel.read-mode .preview-scroll,
-.preview-panel.manual-mode .preview-scroll {
+.gantt-modal-dialog.manual-mode .preview-scroll {
   height: 100%;
   max-height: calc(100dvh - 300px);
   min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-x pan-y;
+  overflow: hidden;
 }
 
 .preview-canvas {
   position: relative;
+  width: 100%;
+  height: 100%;
   min-width: 100%;
   min-height: 100%;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .gantt-preview {
@@ -3518,7 +3510,7 @@ input[readonly] {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 14px;
   width: calc(100vw - 48px);
   height: calc(100vh - 48px);
@@ -3579,10 +3571,6 @@ input[readonly] {
   border-color: rgba(255, 45, 85, 0.24);
   color: var(--red);
   transform: translateY(-1px);
-}
-
-.gantt-modal-overview {
-  padding: 4px 8px;
 }
 
 .gantt-modal-body {

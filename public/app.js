@@ -86,7 +86,6 @@ const PREVIEW_MAX_WEEKS = 30;
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.05;
-const READ_PREVIEW_ZOOM = 0.9;
 const FIT_PREVIEW_MIN_ZOOM = 0.08;
 const CODE_FINGERPRINT = Object.freeze({
   author: 'Caius',
@@ -102,7 +101,6 @@ const previewPanel = ganttModal ? ganttModal.querySelector('.gantt-modal-dialog'
 const previewScroll = ganttModal ? ganttModal.querySelector('.preview-scroll') : null;
 const previewCanvas = ganttModal ? ganttModal.querySelector('#previewCanvas') : null;
 const ganttPreview = ganttModal ? ganttModal.querySelector('#ganttPreview') : null;
-const projectOverview = ganttModal ? ganttModal.querySelector('#projectOverview') : null;
 const projectStats = document.querySelector('#projectStats');
 const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
@@ -114,7 +112,6 @@ const importBtn = document.querySelector('#importBtn');
 const importFile = document.querySelector('#importFile');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
-const readPreviewBtn = ganttModal ? ganttModal.querySelector('#readPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
 const zoomInBtn = ganttModal ? ganttModal.querySelector('#zoomInBtn') : null;
 const zoomSlider = ganttModal ? ganttModal.querySelector('#zoomSlider') : null;
@@ -684,17 +681,16 @@ function setPreviewZoomLabel(zoom) {
   zoomSlider.value = String(clampNumber(percent, Number(zoomSlider.min), Number(zoomSlider.max)));
   zoomValue.textContent = `${percent}%`;
   fitPreviewBtn.classList.toggle('active', previewZoomMode === 'fit');
-  readPreviewBtn.classList.toggle('active', previewZoomMode === 'read');
   if (previewPanel) {
     previewPanel.classList.toggle('fit-mode', previewZoomMode === 'fit');
-    previewPanel.classList.toggle('read-mode', previewZoomMode === 'read');
     previewPanel.classList.toggle('manual-mode', previewZoomMode === 'manual');
   }
 }
 
 function applyPreviewZoom() {
   if (!previewCanvas || !ganttPreview) return;
-  const contentWidth = ganttPreview.scrollWidth;
+  ganttPreview.style.width = 'max-content';
+  const contentWidth = Math.max(ganttPreview.scrollWidth, ganttPreview.offsetWidth);
   const contentHeight = ganttPreview.scrollHeight;
   if (!contentWidth || !contentHeight) return;
 
@@ -703,23 +699,27 @@ function applyPreviewZoom() {
   const fitZoom = clampNumber(
     Math.min(availableWidth / contentWidth, availableHeight / contentHeight),
     FIT_PREVIEW_MIN_ZOOM,
-    1,
+    ZOOM_MAX,
   );
   const zoom = previewZoomMode === 'fit'
     ? fitZoom
-    : previewZoomMode === 'read'
-      ? clampNumber(READ_PREVIEW_ZOOM, ZOOM_MIN, ZOOM_MAX)
-      : clampNumber(manualPreviewZoom, ZOOM_MIN, ZOOM_MAX);
+    : clampNumber(manualPreviewZoom, ZOOM_MIN, ZOOM_MAX);
 
   const scaledWidth = Math.ceil(contentWidth * zoom);
   const scaledHeight = Math.ceil(contentHeight * zoom);
+  const offsetX = Math.max(0, Math.floor((availableWidth - scaledWidth) / 2));
+  const offsetY = Math.max(0, Math.floor((availableHeight - scaledHeight) / 2));
 
   currentPreviewZoom = zoom;
+  ganttPreview.style.width = `${contentWidth}px`;
+  ganttPreview.style.height = `${contentHeight}px`;
+  ganttPreview.style.left = `${offsetX}px`;
+  ganttPreview.style.top = `${offsetY}px`;
   ganttPreview.style.transform = `scale(${zoom})`;
-  previewCanvas.style.width = `${Math.max(scaledWidth, availableWidth)}px`;
-  previewCanvas.style.height = `${Math.max(scaledHeight, availableHeight)}px`;
-  previewCanvas.style.minWidth = `${scaledWidth}px`;
-  previewCanvas.style.minHeight = `${scaledHeight}px`;
+  previewCanvas.style.width = `${availableWidth}px`;
+  previewCanvas.style.height = `${availableHeight}px`;
+  previewCanvas.style.minWidth = `${availableWidth}px`;
+  previewCanvas.style.minHeight = `${availableHeight}px`;
   setPreviewZoomLabel(zoom);
 }
 
@@ -737,34 +737,6 @@ function setManualPreviewZoom(nextZoom) {
   previewZoomMode = 'manual';
   manualPreviewZoom = clampNumber(nextZoom, ZOOM_MIN, ZOOM_MAX);
   applyPreviewZoom();
-}
-
-function renderProjectOverview() {
-  if (!projectOverview) return;
-  projectOverview.textContent = '';
-
-  if (!state.phases.length) {
-    projectOverview.append(makeElement('div', 'overview-empty', '暂无项目阶段。'));
-    return;
-  }
-
-  const strip = makeElement('div', 'overview-strip');
-
-  state.phases.forEach((phase, phaseIndex) => {
-    const card = makeElement('div', 'overview-card');
-    card.dataset.phaseIndex = String(phaseIndex);
-    card.style.setProperty('--phase-accent', phaseAccents[phaseIndex % phaseAccents.length]);
-    card.classList.toggle('located', focusedPhaseIndex === phaseIndex);
-    const titleRow = makeElement('div', 'overview-title-row');
-    titleRow.append(makeElement('span', 'overview-phase-name', phase.name || `阶段 ${phaseIndex + 1}`));
-    card.append(
-      titleRow,
-      makeElement('span', 'overview-date', `${phase.start || '-'} - ${phase.end || '-'}`),
-    );
-    strip.append(card);
-  });
-
-  projectOverview.append(strip);
 }
 
 function getTodayIso() {
@@ -1037,7 +1009,6 @@ function renderProjectStats() {
 }
 
 function renderRightPane() {
-  renderProjectOverview();
   renderPreview();
 }
 
@@ -1101,18 +1072,15 @@ function renderPreview() {
   const rows = getPreviewRows();
   ganttPreview.style.gridTemplateColumns = `250px 160px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
 
-  const title = makePreviewCell('preview-title', state.title || '甘特图 - 项目进度计划表（周视图）', '1 / -1', '1');
-  ganttPreview.append(title);
-
-  ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '2 / 5'));
-  ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '2 / 5'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '1 / 4'));
+  ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '1 / 4'));
 
   getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
     ganttPreview.append(makePreviewCell(
       'preview-month',
       band.label,
       `${band.fromWeek + 2} / span ${band.toWeek - band.fromWeek + 1}`,
-      '2',
+      '1',
     ));
   });
 
@@ -1120,12 +1088,12 @@ function renderPreview() {
     const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
     const weekEnd = addDaysIso(weekStart, 6);
     const gridColumn = `${weekIndex + 2}`;
-    ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '3'));
-    ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '4'));
+    ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '2'));
+    ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '3'));
   }
 
   rows.forEach((item, index) => {
-    const gridRow = `${index + 5}`;
+    const gridRow = `${index + 4}`;
     const isPhase = item.kind === 'phase';
     const color = phaseAccents[item.phaseIndex % phaseAccents.length];
     const rowClass = isPhase ? ' preview-row-phase' : '';
@@ -1225,29 +1193,6 @@ function focusPhase(phaseIndex) {
   if (!Number.isInteger(phaseIndex) || !state.phases[phaseIndex]) return;
   focusedPhaseIndex = phaseIndex;
   expandedPhaseIndexes.add(phaseIndex);
-  render();
-  requestAnimationFrame(() => {
-    phaseList.querySelector(`[data-phase-index="${phaseIndex}"]`)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-    });
-  });
-  if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
-  focusPhaseTimer = window.setTimeout(() => {
-    if (focusedPhaseIndex !== phaseIndex) return;
-    focusedPhaseIndex = null;
-    render();
-  }, 1800);
-}
-
-function togglePhaseFromOverview(phaseIndex) {
-  if (!Number.isInteger(phaseIndex) || !state.phases[phaseIndex]) return;
-  focusedPhaseIndex = phaseIndex;
-  if (expandedPhaseIndexes.has(phaseIndex)) {
-    expandedPhaseIndexes.delete(phaseIndex);
-  } else {
-    expandedPhaseIndexes.add(phaseIndex);
-  }
   render();
   requestAnimationFrame(() => {
     phaseList.querySelector(`[data-phase-index="${phaseIndex}"]`)?.scrollIntoView({
@@ -1679,14 +1624,6 @@ generateBtn.addEventListener('click', () => generate('xlsx'));
 imageBtn.addEventListener('click', () => generate('png'));
 importBtn.addEventListener('click', () => importFile.click());
 importFile.addEventListener('change', () => importExcel(importFile.files[0]));
-if (projectOverview) {
-  projectOverview.addEventListener('click', (event) => {
-    const card = event.target.closest('.overview-card');
-    if (!card) return;
-    const phaseIndex = Number(card.dataset.phaseIndex);
-    togglePhaseFromOverview(phaseIndex);
-  });
-}
 // Gantt modal open/close
 function openGanttModal() {
   if (!ganttModal) return;
@@ -1721,15 +1658,11 @@ if (fitPreviewBtn) fitPreviewBtn.addEventListener('click', () => {
   previewZoomMode = 'fit';
   applyPreviewZoom();
 });
-if (readPreviewBtn) readPreviewBtn.addEventListener('click', () => {
-  previewZoomMode = 'read';
-  applyPreviewZoom();
-});
 if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom - ZOOM_STEP));
 if (zoomInBtn) zoomInBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom + ZOOM_STEP));
 if (zoomSlider) zoomSlider.addEventListener('input', () => setManualPreviewZoom(Number(zoomSlider.value) / 100));
 window.addEventListener('resize', () => {
-  if (previewZoomMode === 'fit' || previewZoomMode === 'read') applyPreviewZoom();
+  if (previewZoomMode === 'fit') applyPreviewZoom();
 });
 
 registerCodeFingerprint();
