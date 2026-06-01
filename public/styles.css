@@ -1578,6 +1578,10 @@ input[readonly] {
   line-height: 1;
 }
 
+.preview-milestone-label {
+  white-space: nowrap;
+}
+
 .preview-empty {
   padding: 26px;
   color: var(--muted);

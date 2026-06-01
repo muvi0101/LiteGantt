@@ -82,7 +82,7 @@ const statusDefaultProgress = {
 const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
-const PREVIEW_MAX_WEEKS = 30;
+const PREVIEW_MAX_WEEKS = 104;
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.05;
@@ -592,15 +592,54 @@ function getAllPreviewDates() {
   return dates.filter(isIsoDate);
 }
 
+function getPreviewMeasureContext() {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (context) {
+    context.font = '800 13px "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif';
+  }
+  return context;
+}
+
+function estimatePreviewMilestoneWidth(task) {
+  const labelText = `${task.name} (${fmtMd(task.end)})`;
+  const context = getPreviewMeasureContext();
+  const textWidth = context ? context.measureText(labelText).width : labelText.length * 8;
+  return Math.ceil(textWidth) + 34;
+}
+
+function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
+  const baseTrackWidth = baseWeeks * PREVIEW_WEEK_WIDTH;
+  let extraWeeks = 0;
+
+  state.phases.forEach((phase, phaseIndex) => {
+    phase.tasks.forEach((task) => {
+      if (!task.milestone || !isIsoDate(task.start) || !isIsoDate(task.end)) return;
+      const dayOffset = Math.max(0, Math.round((dateSortValue(task.start) - dateSortValue(projectStartValue)) / 86400000));
+      const durationDays = daysInclusiveIso(task.start, task.end);
+      const leftPx = (dayOffset * PREVIEW_WEEK_WIDTH) / 7 + 2;
+      const exactWidthPx = (durationDays * PREVIEW_WEEK_WIDTH) / 7;
+      const shellWidthPx = Math.max(12, exactWidthPx + 4);
+      const markerGapPx = Number.isFinite(task.markerGapPx) ? task.markerGapPx : 6;
+      const markerRightPx = leftPx + shellWidthPx + markerGapPx + estimatePreviewMilestoneWidth({ ...task, phaseIndex });
+      const overflowPx = Math.max(0, markerRightPx - baseTrackWidth);
+      if (overflowPx > 0) {
+        extraWeeks = Math.max(extraWeeks, Math.ceil(overflowPx / PREVIEW_WEEK_WIDTH));
+      }
+    });
+  });
+
+  return extraWeeks;
+}
+
 function getPreviewRange() {
   const projectStartValue = getEarliestPhaseStart();
   const allDates = getAllPreviewDates();
   const projectEndValue = maxIsoDate(allDates);
   if (!projectStartValue || !projectEndValue) return null;
-  const totalWeeks = Math.min(
-    PREVIEW_MAX_WEEKS,
-    Math.max(4, Math.ceil(daysInclusiveIso(projectStartValue, projectEndValue) / 7)),
-  );
+  const baseWeeks = Math.max(4, Math.ceil(daysInclusiveIso(projectStartValue, projectEndValue) / 7));
+  const extraWeeks = getPreviewExtraWeeks(projectStartValue, baseWeeks);
+  const totalWeeks = Math.min(PREVIEW_MAX_WEEKS, Math.max(4, baseWeeks + extraWeeks));
   return { projectStartValue, projectEndValue, totalWeeks };
 }
 
@@ -1053,6 +1092,7 @@ function renderPreviewBar(track, item, projectStartValue) {
     star.className = 'preview-milestone-star';
     star.textContent = '★';
     const label = document.createElement('span');
+    label.className = 'preview-milestone-label';
     label.textContent = `${item.name} (${fmtMd(item.end)})`;
     marker.append(star, label);
     track.append(marker);
