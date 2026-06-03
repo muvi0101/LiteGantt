@@ -1,20 +1,14 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import crypto from 'node:crypto';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateGanttPng, generateGanttXlsx, importGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
-const outputDir = path.join(__dirname, 'outputs');
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 const appFingerprint = 'CGFB-2026-N7Q4-X1K8';
-const upstashRedisUrl = (process.env.UPSTASH_REDIS_REST_URL || '').trim().replace(/\/+$/, '');
-const upstashRedisToken = (process.env.UPSTASH_REDIS_REST_TOKEN || '').trim();
-const exportKeyPrefix = process.env.EXPORT_KEY_PREFIX || 'litegantt:export:v1:';
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((origin) => origin.trim())
@@ -41,7 +35,6 @@ function getCorsHeaders(request) {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Expose-Headers': 'Content-Disposition',
     'Vary': 'Origin',
   };
 }
@@ -52,50 +45,6 @@ function sendJson(request, response, statusCode, payload) {
     ...getCorsHeaders(request),
   });
   response.end(JSON.stringify(payload));
-}
-
-function hashExportKey(exportKey) {
-  return crypto.createHash('sha256').update(exportKey).digest('hex');
-}
-
-async function upstashCommand(command) {
-  if (!upstashRedisUrl || !upstashRedisToken) {
-    if (process.env.NODE_ENV !== 'production') {
-      return null;
-    }
-    throw new Error('导出密钥服务未配置，请先在 Render 设置 Upstash Redis 环境变量');
-  }
-
-  const response = await fetch(upstashRedisUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${upstashRedisToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(command),
-  });
-
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.error) {
-    throw new Error(payload.error || '导出密钥服务暂时不可用');
-  }
-
-  return payload.result;
-}
-
-async function validateExportKey(rawExportKey) {
-  if (!upstashRedisUrl || !upstashRedisToken) {
-    if (process.env.NODE_ENV !== 'production') return;
-    throw new Error('导出密钥服务未配置，请先在 Render 设置 Upstash Redis 环境变量');
-  }
-
-  const exportKey = String(rawExportKey || '').trim();
-  if (!exportKey) throw new Error('请输入导出密钥');
-  if (exportKey.length > 160) throw new Error('导出密钥过长');
-
-  const redisKey = `${exportKeyPrefix}${hashExportKey(exportKey)}`;
-  const storedKey = await upstashCommand(['GET', redisKey]);
-  if (!storedKey) throw new Error('导出密钥无效或已过期');
 }
 
 function readLocalPage(targetPort, timeoutMs = 1200) {
@@ -130,28 +79,6 @@ async function isCurrentAppAlreadyRunning(targetPort) {
   return payload.body.includes(appFingerprint) || payload.body.includes('<title>项目甘特图生成器</title>');
 }
 
-async function readJsonBody(request) {
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of request) {
-    size += chunk.length;
-    if (size > 2 * 1024 * 1024) throw new Error('请求内容过大');
-    chunks.push(chunk);
-  }
-  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-}
-
-async function readRawBody(request, maxBytes = 12 * 1024 * 1024) {
-  const chunks = [];
-  let size = 0;
-  for await (const chunk of request) {
-    size += chunk.length;
-    if (size > maxBytes) throw new Error('文件过大，请上传 12MB 以内的 Excel 文件');
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-}
-
 async function serveStatic(request, response) {
   const requestUrl = new URL(request.url, `http://${request.headers.host}`);
   const rawPath = requestUrl.pathname === '/' ? '/index.html' : requestUrl.pathname;
@@ -180,34 +107,6 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, getCorsHeaders(request));
       response.end();
-      return;
-    }
-
-    if (request.method === 'POST' && request.url === '/api/generate') {
-      const payload = await readJsonBody(request);
-      const format = payload.format === 'png' ? 'png' : 'xlsx';
-      await validateExportKey(payload.exportKey);
-      const result = format === 'png'
-        ? await generateGanttPng(payload, outputDir)
-        : await generateGanttXlsx(payload, outputDir);
-      const fileBuffer = await fsp.readFile(result.outputPath);
-      response.writeHead(200, {
-        'Content-Type': format === 'png'
-          ? 'image/png'
-          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`,
-        'Content-Length': fileBuffer.length,
-        ...getCorsHeaders(request),
-      });
-      response.end(fileBuffer);
-      return;
-    }
-
-    if (request.method === 'POST' && request.url === '/api/import') {
-      const fileBuffer = await readRawBody(request);
-      if (!fileBuffer.length) throw new Error('未收到 Excel 文件');
-      const project = await importGanttXlsx(fileBuffer);
-      sendJson(request, response, 200, { project });
       return;
     }
 

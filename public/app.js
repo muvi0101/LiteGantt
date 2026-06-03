@@ -64,7 +64,6 @@ const defaultProject = {
 
 let state = structuredClone(defaultProject);
 
-const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
 const phaseAccents = ['#116acb', '#13a8c8', '#16a272', '#5f6df1', '#8b5cf6', '#d89419', '#e11d48'];
 const taskStatuses = ['未开始', '进行中', '已完成', '延期'];
 const statusColorMap = {
@@ -106,10 +105,6 @@ const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
-const generateBtn = document.querySelector('#generateBtn');
-const imageBtn = document.querySelector('#imageBtn');
-const importBtn = document.querySelector('#importBtn');
-const importFile = document.querySelector('#importFile');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
@@ -274,11 +269,6 @@ completeBreakdownBtn.addEventListener('click', completeBreakdown);
 breakdownDrawer.querySelector('.breakdown-close').addEventListener('click', closeBreakdown);
 breakdownDrawer.querySelector('.breakdown-backdrop').addEventListener('click', closeBreakdown);
 
-
-const formatLabels = {
-  xlsx: { action: '生成 Excel', busy: '生成中...', done: '已生成并开始下载 Excel。', status: '正在生成 Excel，请稍候。' },
-  png: { action: '生成图片', busy: '生成中...', done: '已生成并开始下载图片。', status: '正在生成图片，请稍候。' },
-};
 
 const HOLIDAY_OVERRIDES = Object.freeze({
   '2025-01-01': { type: 'holiday', label: '元旦' },
@@ -1506,124 +1496,6 @@ function normalizeImportedProject(project) {
   };
 }
 
-function getFileName(response) {
-  const header = response.headers.get('Content-Disposition') || '';
-  const match = header.match(/filename\*=UTF-8''([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : `项目计划甘特图-${Date.now()}.xlsx`;
-}
-
-function apiUrl(path) {
-  return `${API_BASE}${path}`;
-}
-
-function requestExportKey(format) {
-  const formatName = format === 'png' ? '图片' : 'Excel';
-  const exportKey = window.prompt(`请输入${formatName}导出密钥。密钥在有效期内可重复使用。`, '');
-  if (exportKey === null) return null;
-  const normalizedKey = exportKey.trim();
-  if (!normalizedKey) {
-    setStatus('请输入导出密钥后再导出。', 'error');
-    return null;
-  }
-  return normalizedKey;
-}
-
-function setGenerating(format, busy) {
-  const activeButton = format === 'png' ? imageBtn : generateBtn;
-  generateBtn.disabled = busy;
-  imageBtn.disabled = busy;
-  importBtn.disabled = busy;
-  generateBtn.innerHTML = `<span>${formatLabels.xlsx.action}</span>`;
-  imageBtn.innerHTML = `<span>${formatLabels.png.action}</span>`;
-  if (busy) activeButton.textContent = formatLabels[format].busy;
-}
-
-function setImporting(busy) {
-  importBtn.disabled = busy;
-  generateBtn.disabled = busy;
-  imageBtn.disabled = busy;
-  importBtn.textContent = busy ? '导入中...' : '导入 Excel';
-}
-
-async function generate(format = 'xlsx') {
-  const exportKey = requestExportKey(format);
-  if (!exportKey) return;
-
-  setGenerating(format, true);
-  setStatus(formatLabels[format].status);
-
-  try {
-    const response = await fetch(apiUrl('/api/generate'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...toPayload(), format, exportKey }),
-    });
-
-    if (!response.ok) {
-      const errorPayload = await response.json().catch(() => ({}));
-      throw new Error(errorPayload.error || '生成失败');
-    }
-
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = getFileName(response);
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-    setStatus(formatLabels[format].done, 'ok');
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : String(error), 'error');
-  } finally {
-    setGenerating(format, false);
-  }
-}
-
-async function importExcel(file) {
-  if (!file) return;
-  if (!/\.xlsx$/i.test(file.name)) {
-    setStatus('请上传 .xlsx 格式的甘特图文件。', 'error');
-    return;
-  }
-
-  setImporting(true);
-  setStatus('正在读取 Excel 项目计划，请稍候。');
-
-  try {
-    const response = await fetch(apiUrl('/api/import'), {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      },
-      body: file,
-    });
-
-    const responseText = await response.text();
-    let payload = {};
-    try {
-      payload = responseText ? JSON.parse(responseText) : {};
-    } catch {
-      payload = { error: responseText };
-    }
-    if (!response.ok) throw new Error(payload.error || '导入失败');
-
-    state = normalizeImportedProject(payload.project);
-    focusedPhaseIndex = null;
-    expandedPhaseIndexes.clear();
-    previewZoomMode = 'fit';
-    render();
-    schedulePreviewZoom();
-    setStatus(`已导入：${file.name}`, 'ok');
-  } catch (error) {
-    setStatus(error instanceof Error ? error.message : String(error), 'error');
-  } finally {
-    importFile.value = '';
-    setImporting(false);
-  }
-}
-
 document.querySelector('#addPhaseBtn').addEventListener('click', () => {
   const { start, end } = getNewPhaseDates();
   state.phases.push({
@@ -1660,10 +1532,6 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
   setStatus('已恢复示例数据。');
 });
 
-generateBtn.addEventListener('click', () => generate('xlsx'));
-imageBtn.addEventListener('click', () => generate('png'));
-importBtn.addEventListener('click', () => importFile.click());
-importFile.addEventListener('change', () => importExcel(importFile.files[0]));
 // Gantt modal open/close
 function openGanttModal() {
   if (!ganttModal) return;
