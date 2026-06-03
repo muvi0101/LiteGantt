@@ -182,7 +182,7 @@ button {
 
 .top-actions {
   display: grid;
-  grid-template-columns: minmax(150px, 230px);
+  grid-template-columns: minmax(118px, auto) minmax(150px, 230px);
   gap: 10px;
   align-items: center;
   justify-content: end;
@@ -192,6 +192,10 @@ button {
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.58);
   box-shadow: var(--tight-shadow);
+}
+
+.excel-export-btn {
+  white-space: nowrap;
 }
 
 .preview-btn {
@@ -999,6 +1003,7 @@ input[readonly] {
 
   #addPhaseBtn,
   #resetBtn,
+  #exportExcelBtn,
   #previewGanttBtn {
     width: 100%;
     min-width: 0;
@@ -3025,7 +3030,7 @@ input[readonly] {
 
   .top-actions {
     width: 100%;
-    grid-template-columns: minmax(140px, 1fr);
+    grid-template-columns: minmax(118px, auto) minmax(140px, 1.2fr);
     justify-content: stretch;
   }
 
@@ -3259,7 +3264,7 @@ input[readonly] {
   }
 
   .top-actions {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .status-box {
@@ -3444,7 +3449,7 @@ input[readonly] {
 
 @media (max-width: 520px) {
   .top-actions {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .health-progress-card {

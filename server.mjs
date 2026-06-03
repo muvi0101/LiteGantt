@@ -3,9 +3,11 @@ import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { generateGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
+const outputDir = path.join(__dirname, 'outputs');
 const port = Number(process.env.PORT || 4173);
 const host = process.env.HOST || '0.0.0.0';
 const appFingerprint = 'CGFB-2026-N7Q4-X1K8';
@@ -35,6 +37,7 @@ function getCorsHeaders(request) {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Expose-Headers': 'Content-Disposition',
     'Vary': 'Origin',
   };
 }
@@ -45,6 +48,17 @@ function sendJson(request, response, statusCode, payload) {
     ...getCorsHeaders(request),
   });
   response.end(JSON.stringify(payload));
+}
+
+async function readJsonBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 2 * 1024 * 1024) throw new Error('请求内容过大');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
 }
 
 function readLocalPage(targetPort, timeoutMs = 1200) {
@@ -107,6 +121,20 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'OPTIONS') {
       response.writeHead(204, getCorsHeaders(request));
       response.end();
+      return;
+    }
+
+    if (request.method === 'POST' && request.url === '/api/export-xlsx') {
+      const payload = await readJsonBody(request);
+      const result = await generateGanttXlsx(payload, outputDir);
+      const fileBuffer = await fsp.readFile(result.outputPath);
+      response.writeHead(200, {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`,
+        'Content-Length': fileBuffer.length,
+        ...getCorsHeaders(request),
+      });
+      response.end(fileBuffer);
       return;
     }
 

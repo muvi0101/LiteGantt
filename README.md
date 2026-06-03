@@ -1,6 +1,6 @@
 # 项目甘特图生成器
 
-本地输入页面，用于录入项目阶段、阶段任务、日期范围、任务拆解和 Milestone，并实时预览周视图甘特图。
+本地输入页面，用于录入项目阶段、阶段任务、日期范围、任务拆解和 Milestone，实时预览周视图甘特图，并导出同版式 Excel。
 
 ## 启动
 
@@ -17,12 +17,25 @@ http://127.0.0.1:4173
 
 ## 部署架构
 
-当前版本不提供图片导出能力，生产环境只需要部署前端静态页面：
+当前版本不提供图片导出能力，但提供 Excel 导出。生产环境建议采用：
 
 - 前端：Cloudflare Pages，仅部署 `public` 目录。
-- 后端：当前无图片生成 API 依赖，不需要 Render 后端服务。
+- 后端 API：Render Docker Web Service，部署项目根目录，用于生成 Excel。
 
-本地 `npm start` 仍会启动一个轻量 Node 静态服务，便于本机验证。
+本地 `npm start` 会同时提供静态页面和 Excel 导出接口。
+
+## Render 后端部署
+
+1. 将本目录推送到一个私有 Git 仓库。
+2. 在 Render 新建 Blueprint 或 Web Service，使用本目录的 `render.yaml` / `Dockerfile`。
+3. 设置环境变量：
+   - `ALLOWED_ORIGINS=https://你的前端域名`
+4. 部署完成后，记录 Render 服务地址，例如：
+   - `https://litegantt-api.onrender.com`
+
+后端接口：
+
+- `POST /api/export-xlsx`：生成 Excel。
 
 ## Cloudflare Pages 前端部署
 
@@ -30,8 +43,16 @@ http://127.0.0.1:4173
 2. 推荐在 Cloudflare Pages 设置：
    - Build command：`npm run build:pages`
    - Build output directory：`public`
-3. 不需要配置 `LITEGANTT_API_BASE`。
-4. 绑定你的域名。
+   - Environment variable：`LITEGANTT_API_BASE=https://你的-render-api地址`
+
+构建时会自动写入 `public/config.js`：
+
+``` js
+window.LITEGANTT_API_BASE = 'https://你的-render-api地址';
+```
+
+3. 绑定你的域名。
+4. 回到 Render，把 Cloudflare Pages 域名加入 `ALLOWED_ORIGINS`。
 
 ## 支持的输入维度
 
@@ -49,4 +70,5 @@ http://127.0.0.1:4173
 - 阶段行加粗，细分任务行不加粗
 - 甘特条为胶囊样式
 - Milestone 用红色实心五角星和文本标记
-- 当前版本仅支持页面实时预览，不提供图片导出。
+- 支持导出 Excel `.xlsx`
+- 当前版本不提供图片导出。

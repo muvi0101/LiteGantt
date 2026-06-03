@@ -64,6 +64,7 @@ const defaultProject = {
 
 let state = structuredClone(defaultProject);
 
+const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
 const phaseAccents = ['#116acb', '#13a8c8', '#16a272', '#5f6df1', '#8b5cf6', '#d89419', '#e11d48'];
 const taskStatuses = ['未开始', '进行中', '已完成', '延期'];
 const statusColorMap = {
@@ -82,6 +83,10 @@ const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
 const PREVIEW_MAX_WEEKS = 104;
+const PREVIEW_MILESTONE_MARKER_WIDTH = 10;
+const PREVIEW_MILESTONE_STAR_WIDTH = 16;
+const PREVIEW_MILESTONE_BAR_TO_STAR_GAP = 8;
+const PREVIEW_MILESTONE_STAR_TO_TEXT_GAP = 12;
 const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.05;
@@ -105,6 +110,7 @@ const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
+const exportExcelBtn = document.querySelector('#exportExcelBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
@@ -118,6 +124,13 @@ let currentPreviewZoom = 1;
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
+
+const excelExportLabels = {
+  action: '导出 Excel',
+  busy: '生成中...',
+  done: 'Excel 已生成并开始下载。',
+  status: '正在生成 Excel，请稍候。',
+};
 
 // Task breakdown drawer state
 let breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
@@ -376,6 +389,25 @@ function setStatus(message, type = '') {
   statusBox.className = `status-box ${type}`.trim();
 }
 
+function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
+
+function getDownloadFileName(response, fallbackExt = 'xlsx') {
+  const header = response.headers.get('Content-Disposition') || '';
+  const utf8Match = header.match(/filename\*=UTF-8''([^;]+)/);
+  if (utf8Match) return decodeURIComponent(utf8Match[1]);
+  const asciiMatch = header.match(/filename="?([^";]+)"?/);
+  if (asciiMatch) return asciiMatch[1];
+  return `项目计划甘特图-${Date.now()}.${fallbackExt}`;
+}
+
+function setExcelExporting(busy) {
+  if (!exportExcelBtn) return;
+  exportExcelBtn.disabled = busy;
+  exportExcelBtn.textContent = busy ? excelExportLabels.busy : excelExportLabels.action;
+}
+
 function isIsoDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
@@ -595,7 +627,23 @@ function estimatePreviewMilestoneWidth(task) {
   const labelText = `${task.name} (${fmtMd(task.end)})`;
   const context = getPreviewMeasureContext();
   const textWidth = context ? context.measureText(labelText).width : labelText.length * 8;
-  return Math.ceil(textWidth) + 34;
+  return Math.ceil(textWidth);
+}
+
+function getPreviewDayOffset(value, projectStartValue) {
+  return Math.max(0, Math.round((dateSortValue(value) - dateSortValue(projectStartValue)) / 86400000));
+}
+
+function getPreviewTimelinePx(dayOffset) {
+  return (dayOffset * PREVIEW_WEEK_WIDTH) / 7;
+}
+
+function getPreviewDurationPx(startOffset, durationDays) {
+  return getPreviewTimelinePx(startOffset + durationDays) - getPreviewTimelinePx(startOffset);
+}
+
+function getPreviewMilestonePointPx(item, projectStartValue) {
+  return getPreviewTimelinePx(getPreviewDayOffset(item.end, projectStartValue) + 1);
 }
 
 function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
@@ -605,13 +653,13 @@ function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
   state.phases.forEach((phase, phaseIndex) => {
     phase.tasks.forEach((task) => {
       if (!task.milestone || !isIsoDate(task.start) || !isIsoDate(task.end)) return;
-      const dayOffset = Math.max(0, Math.round((dateSortValue(task.start) - dateSortValue(projectStartValue)) / 86400000));
-      const durationDays = daysInclusiveIso(task.start, task.end);
-      const leftPx = (dayOffset * PREVIEW_WEEK_WIDTH) / 7 + 2;
-      const exactWidthPx = (durationDays * PREVIEW_WEEK_WIDTH) / 7;
-      const shellWidthPx = Math.max(12, exactWidthPx + 4);
-      const markerGapPx = Number.isFinite(task.markerGapPx) ? task.markerGapPx : 6;
-      const markerRightPx = leftPx + shellWidthPx + markerGapPx + estimatePreviewMilestoneWidth({ ...task, phaseIndex });
+      const pointPx = getPreviewMilestonePointPx(task, projectStartValue);
+      const markerGapPx = Number.isFinite(task.markerGapPx) ? task.markerGapPx : PREVIEW_MILESTONE_BAR_TO_STAR_GAP;
+      const markerRightPx = pointPx
+        + markerGapPx
+        + PREVIEW_MILESTONE_STAR_WIDTH
+        + PREVIEW_MILESTONE_STAR_TO_TEXT_GAP
+        + estimatePreviewMilestoneWidth({ ...task, phaseIndex });
       const overflowPx = Math.max(0, markerRightPx - baseTrackWidth);
       if (overflowPx > 0) {
         extraWeeks = Math.max(extraWeeks, Math.ceil(overflowPx / PREVIEW_WEEK_WIDTH));
@@ -1051,33 +1099,38 @@ function durationText(item) {
 
 function renderPreviewBar(track, item, projectStartValue) {
   if (!isIsoDate(item.start) || !isIsoDate(item.end)) return;
-  const dayOffset = Math.max(0, Math.round((dateSortValue(item.start) - dateSortValue(projectStartValue)) / 86400000));
+  const dayOffset = getPreviewDayOffset(item.start, projectStartValue);
   const durationDays = daysInclusiveIso(item.start, item.end);
-  const leftPx = (dayOffset * PREVIEW_WEEK_WIDTH) / 7 + 2;
-  const exactWidthPx = (durationDays * PREVIEW_WEEK_WIDTH) / 7;
-  const shellWidthPx = Math.max(12, exactWidthPx + 4);
-  const fillWidthPx = Math.max(8, exactWidthPx - (item.kind === 'phase' ? 4 : 6));
+  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, projectStartValue) : null;
+  const drawAsMilestonePoint = item.kind === 'sub' && item.milestone && durationDays === 1;
+  const barWidthPx = drawAsMilestonePoint
+    ? PREVIEW_MILESTONE_MARKER_WIDTH
+    : getPreviewDurationPx(dayOffset, durationDays);
+  const leftPx = drawAsMilestonePoint
+    ? pointPx - barWidthPx
+    : getPreviewTimelinePx(dayOffset);
   const color = phaseAccents[item.phaseIndex % phaseAccents.length];
 
   const shell = document.createElement('span');
   shell.className = 'preview-bar-shell';
   shell.style.left = `${leftPx}px`;
-  shell.style.width = `${shellWidthPx}px`;
+  shell.style.width = `${barWidthPx}px`;
 
   const fill = document.createElement('span');
   fill.className = 'preview-bar-fill';
-  fill.style.width = `${fillWidthPx}px`;
+  fill.style.width = `${barWidthPx}px`;
   fill.style.setProperty('--bar-color', color);
   fill.title = item.kind === 'sub' ? getTaskStatus(item) : `阶段完成度 ${normalizeProgress(item.progress)}%`;
   shell.append(fill);
   track.append(shell);
 
   if (item.kind === 'sub' && item.milestone) {
-    const defaultGapPx = 6;
+    const defaultGapPx = PREVIEW_MILESTONE_BAR_TO_STAR_GAP;
     const markerGapPx = Number.isFinite(item.markerGapPx) ? item.markerGapPx : defaultGapPx;
     const marker = document.createElement('span');
     marker.className = 'preview-milestone';
-    marker.style.left = `${leftPx + shellWidthPx + markerGapPx}px`;
+    marker.style.left = `${(pointPx ?? leftPx + barWidthPx) + markerGapPx}px`;
+    marker.style.gap = `${PREVIEW_MILESTONE_STAR_TO_TEXT_GAP}px`;
     const star = document.createElement('span');
     star.className = 'preview-milestone-star';
     star.textContent = '★';
@@ -1496,6 +1549,39 @@ function normalizeImportedProject(project) {
   };
 }
 
+async function exportExcel() {
+  setExcelExporting(true);
+  setStatus(excelExportLabels.status);
+
+  try {
+    const response = await fetch(apiUrl('/api/export-xlsx'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toPayload()),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || `Excel 生成失败：${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = getDownloadFileName(response);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setStatus(excelExportLabels.done, 'ok');
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+  } finally {
+    setExcelExporting(false);
+  }
+}
+
 document.querySelector('#addPhaseBtn').addEventListener('click', () => {
   const { start, end } = getNewPhaseDates();
   state.phases.push({
@@ -1531,6 +1617,8 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
   render();
   setStatus('已恢复示例数据。');
 });
+
+if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportExcel);
 
 // Gantt modal open/close
 function openGanttModal() {
