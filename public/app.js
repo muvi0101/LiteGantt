@@ -111,6 +111,7 @@ const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
+const exportImageBtn = document.querySelector('#exportImageBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
@@ -130,6 +131,13 @@ const excelExportLabels = {
   busy: '生成中...',
   done: 'Excel 已生成并开始下载。',
   status: '正在生成 Excel，请稍候。',
+};
+
+const imageExportLabels = {
+  action: '导出图片',
+  busy: '生成中...',
+  done: '4K 图片已生成并开始下载。',
+  status: '正在生成 4K 图片，请稍候。',
 };
 
 // Task breakdown drawer state
@@ -406,6 +414,25 @@ function setExcelExporting(busy) {
   if (!exportExcelBtn) return;
   exportExcelBtn.disabled = busy;
   exportExcelBtn.textContent = busy ? excelExportLabels.busy : excelExportLabels.action;
+}
+
+function setImageExporting(busy) {
+  if (!exportImageBtn) return;
+  exportImageBtn.disabled = busy;
+  exportImageBtn.textContent = busy ? imageExportLabels.busy : imageExportLabels.action;
+}
+
+function downloadResponseBlob(response, fallbackExt = 'xlsx') {
+  return response.blob().then((blob) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = getDownloadFileName(response, fallbackExt);
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  });
 }
 
 function isIsoDate(value) {
@@ -1565,20 +1592,37 @@ async function exportExcel() {
       throw new Error(payload.error || `Excel 生成失败：${response.status}`);
     }
 
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = getDownloadFileName(response);
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    await downloadResponseBlob(response, 'xlsx');
     setStatus(excelExportLabels.done, 'ok');
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), 'error');
   } finally {
     setExcelExporting(false);
+  }
+}
+
+async function exportImage() {
+  setImageExporting(true);
+  setStatus(imageExportLabels.status);
+
+  try {
+    const response = await fetch(apiUrl('/api/export-png'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(toPayload()),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || `图片生成失败：${response.status}`);
+    }
+
+    await downloadResponseBlob(response, 'png');
+    setStatus(imageExportLabels.done, 'ok');
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+  } finally {
+    setImageExporting(false);
   }
 }
 
@@ -1619,6 +1663,7 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
 });
 
 if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportExcel);
+if (exportImageBtn) exportImageBtn.addEventListener('click', exportImage);
 
 // Gantt modal open/close
 function openGanttModal() {

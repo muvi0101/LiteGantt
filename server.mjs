@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
+import { generateGanttPng, generateGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
@@ -130,6 +130,20 @@ const server = http.createServer(async (request, response) => {
       const fileBuffer = await fsp.readFile(result.outputPath);
       response.writeHead(200, {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`,
+        'Content-Length': fileBuffer.length,
+        ...getCorsHeaders(request),
+      });
+      response.end(fileBuffer);
+      return;
+    }
+
+    if (request.method === 'POST' && request.url === '/api/export-png') {
+      const payload = await readJsonBody(request);
+      const result = await generateGanttPng(payload, outputDir);
+      const fileBuffer = await fsp.readFile(result.outputPath);
+      response.writeHead(200, {
+        'Content-Type': 'image/png',
         'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(result.filename)}`,
         'Content-Length': fileBuffer.length,
         ...getCorsHeaders(request),

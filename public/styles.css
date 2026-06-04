@@ -182,7 +182,7 @@ button {
 
 .top-actions {
   display: grid;
-  grid-template-columns: minmax(118px, auto) minmax(150px, 230px);
+  grid-template-columns: repeat(2, minmax(118px, auto)) minmax(150px, 230px);
   gap: 10px;
   align-items: center;
   justify-content: end;
@@ -194,7 +194,8 @@ button {
   box-shadow: var(--tight-shadow);
 }
 
-.excel-export-btn {
+.excel-export-btn,
+.image-export-btn {
   white-space: nowrap;
 }
 
@@ -457,6 +458,7 @@ button {
 
 .output-stack .primary-btn,
 .output-stack .import-btn,
+.output-stack .download-btn,
 .output-stack .preview-btn {
   width: 100%;
   min-width: 0;
@@ -731,6 +733,7 @@ input[readonly] {
 
 .primary-btn,
 .import-btn,
+.download-btn,
 .secondary-btn,
 .danger-btn,
 .ghost-btn,
@@ -742,7 +745,8 @@ input[readonly] {
 }
 
 .primary-btn,
-.import-btn {
+.import-btn,
+.download-btn {
   min-width: 122px;
   min-height: 40px;
   padding: 0 17px;
@@ -760,15 +764,22 @@ input[readonly] {
   box-shadow: 0 12px 26px rgba(22, 163, 74, 0.2);
 }
 
+.download-btn {
+  background: linear-gradient(180deg, #7c5cff, #5b48d6);
+  box-shadow: 0 12px 26px rgba(88, 72, 214, 0.2);
+}
+
 .primary-btn:hover,
 .import-btn:hover,
+.download-btn:hover,
 .secondary-btn:hover,
 .ghost-btn:hover {
   transform: translateY(-1px);
 }
 
 .primary-btn:disabled,
-.import-btn:disabled {
+.import-btn:disabled,
+.download-btn:disabled {
   cursor: wait;
   opacity: 0.68;
   transform: none;
@@ -1004,6 +1015,7 @@ input[readonly] {
   #addPhaseBtn,
   #resetBtn,
   #exportExcelBtn,
+  #exportImageBtn,
   #previewGanttBtn {
     width: 100%;
     min-width: 0;
@@ -3030,8 +3042,12 @@ input[readonly] {
 
   .top-actions {
     width: 100%;
-    grid-template-columns: minmax(118px, auto) minmax(140px, 1.2fr);
+    grid-template-columns: repeat(2, minmax(118px, 1fr));
     justify-content: stretch;
+  }
+
+  .top-actions .status-box {
+    grid-column: 1 / -1;
   }
 
   .layout {
@@ -3185,7 +3201,7 @@ input[readonly] {
 
 @media (max-width: 920px) {
   .top-actions {
-    grid-template-columns: minmax(96px, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .status-box {

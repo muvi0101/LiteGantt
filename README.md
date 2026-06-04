@@ -1,6 +1,6 @@
 # 项目甘特图生成器
 
-本地输入页面，用于录入项目阶段、阶段任务、日期范围、任务拆解和 Milestone，实时预览周视图甘特图，并导出同版式 Excel。
+本地输入页面，用于录入项目阶段、阶段任务、日期范围、任务拆解和 Milestone，实时预览周视图甘特图，并导出同版式 Excel 与 4K 图片。
 
 ## 启动
 
@@ -17,10 +17,10 @@ http://127.0.0.1:4173
 
 ## 部署架构
 
-当前版本不提供图片导出能力，但提供 Excel 导出。生产环境建议采用：
+当前版本提供 Excel 与 4K PNG 图片导出。生产环境建议采用：
 
 - 前端：Cloudflare Pages，仅部署 `public` 目录。
-- 后端 API：Render Docker Web Service，部署项目根目录，用于生成 Excel。
+- 后端 API：Render Docker Web Service，部署项目根目录，用于生成 Excel 和 4K PNG 图片。
 
 本地 `npm start` 会同时提供静态页面和 Excel 导出接口。
 
@@ -36,6 +36,7 @@ http://127.0.0.1:4173
 后端接口：
 
 - `POST /api/export-xlsx`：生成 Excel。
+- `POST /api/export-png`：生成 4K PNG 图片。
 
 ## Cloudflare Pages 前端部署
 
@@ -71,4 +72,4 @@ window.LITEGANTT_API_BASE = 'https://你的-render-api地址';
 - 甘特条为胶囊样式
 - Milestone 用红色实心五角星和文本标记
 - 支持导出 Excel `.xlsx`
-- 当前版本不提供图片导出。
+- 支持导出 4K PNG 图片 `.png`
