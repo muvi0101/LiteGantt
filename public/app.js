@@ -140,7 +140,7 @@ const imageExportLabels = {
   status: '正在生成 4K 图片，请稍候。',
 };
 
-// Task breakdown drawer state
+// Task breakdown inline state
 let breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
 const subtaskStatuses = ['未开始', '进行中', '已完成', '已暂停', '已取消'];
 const subtaskPriorities = ['高', '中', '低'];
@@ -152,12 +152,6 @@ const subtaskStatusColors = {
   '已取消': '#9ca3af',
 };
 const subtaskPriorityColors = { '高': '#e11d48', '中': '#3b82f6', '低': '#64748b' };
-const breakdownDrawer = document.querySelector('#breakdownDrawer');
-const breakdownList = document.querySelector('#breakdownList');
-const breakdownTitle = document.querySelector('#breakdownTitle');
-const breakdownSubtitle = document.querySelector('#breakdownSubtitle');
-const addSubtaskBtn = document.querySelector('#addSubtaskBtn');
-const completeBreakdownBtn = document.querySelector('#completeBreakdownBtn');
 const subtaskTemplate = document.querySelector('#subtaskTemplate');
 
 function getSubtasks(phaseIndex, taskIndex) {
@@ -179,116 +173,233 @@ function ensureSubtaskDefaults(subtask, parentTask) {
   if (!Array.isArray(subtask.deps)) subtask.deps = [];
 }
 
-function openBreakdown(phaseIndex, taskIndex) {
-  breakdownOpen = { phaseIndex, taskIndex };
-  renderBreakdown();
-  breakdownDrawer.classList.add('open');
-  breakdownDrawer.setAttribute('aria-hidden', 'false');
-  document.body.classList.add('breakdown-open');
+function isBreakdownOpen(phaseIndex, taskIndex) {
+  return breakdownOpen.phaseIndex === phaseIndex && breakdownOpen.taskIndex === taskIndex;
 }
 
-function closeBreakdown() {
-  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
-  breakdownDrawer.classList.remove('open');
-  breakdownDrawer.setAttribute('aria-hidden', 'true');
-  document.body.classList.remove('breakdown-open');
+function isBreakdownTargetValid() {
+  return Boolean(state.phases[breakdownOpen.phaseIndex]?.tasks[breakdownOpen.taskIndex]);
 }
 
-function completeBreakdown() {
-  const { phaseIndex, taskIndex } = breakdownOpen;
-  closeBreakdown();
-  if (!Number.isInteger(phaseIndex) || !Number.isInteger(taskIndex)) return;
-  expandedPhaseIndexes.add(phaseIndex);
-  render();
+function normalizeSubtaskDates(subtask, parentTask) {
+  subtask.start = clampIsoDate(subtask.start || parentTask?.start || '', parentTask?.start, parentTask?.end);
+  subtask.end = clampIsoDate(subtask.end || subtask.start || parentTask?.end || '', maxIsoDate([parentTask?.start, subtask.start]), parentTask?.end);
+  if (isIsoDate(subtask.start) && isIsoDate(subtask.end) && compareIsoDates(subtask.end, subtask.start) < 0) {
+    subtask.end = subtask.start;
+  }
 }
 
-function renderBreakdown() {
-  const { phaseIndex, taskIndex } = breakdownOpen;
-  const phase = state.phases[phaseIndex];
-  const task = phase?.tasks[taskIndex];
-  if (!phase || !task) return;
-  breakdownTitle.textContent = `任务拆解 · ${task.name || '未命名任务'}`;
-  breakdownSubtitle.textContent = `${phase.name} / ${task.start || ''} ~ ${task.end || ''}`;
-  if (!Array.isArray(task.subtasks)) task.subtasks = [];
-  breakdownList.textContent = '';
-  task.subtasks.forEach((subtask, subIndex) => {
-    ensureSubtaskDefaults(subtask, task);
-    const row = subtaskTemplate.content.firstElementChild.cloneNode(true);
-    row.style.setProperty('--status-color', subtaskStatusColors[subtask.status] || '#64748b');
-    row.querySelectorAll('input, select').forEach((input) => {
-      const field = input.dataset.field;
-      if (field === 'deps') {
-        // populate with other tasks in same phase (siblings + other subtasks)
-        input.textContent = '';
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.textContent = '无前置依赖';
-        input.append(emptyOption);
-        const candidates = [];
-        phase.tasks.forEach((siblingTask, sibIndex) => {
-          if (sibIndex !== taskIndex && siblingTask.name) {
-            candidates.push({ value: `task:${sibIndex}`, label: siblingTask.name });
-          }
-          if (sibIndex === taskIndex && Array.isArray(siblingTask.subtasks)) {
-            siblingTask.subtasks.forEach((st, stIdx) => {
-              if (stIdx !== subIndex && st.name) {
-                candidates.push({ value: `sub:${stIdx}`, label: `↳ ${st.name}` });
-              }
-            });
-          }
-        });
-        candidates.forEach((opt) => {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.textContent = opt.label;
-          if ((subtask.deps || [])[0] === opt.value) option.selected = true;
-          input.append(option);
-        });
-        input.value = (subtask.deps || [])[0] || '';
-        input.addEventListener('change', () => {
-          subtask.deps = input.value ? [input.value] : [];
-        });
-      } else {
-        input.value = subtask[field] ?? '';
-        input.addEventListener('input', () => {
-          subtask[field] = input.value;
-          if (field === 'status') {
-            row.style.setProperty('--status-color', subtaskStatusColors[input.value] || '#64748b');
-          }
-        });
-      }
-    });
-    row.querySelector('.delete-subtask').addEventListener('click', () => {
-      task.subtasks.splice(subIndex, 1);
-      renderBreakdown();
-    });
-    breakdownList.append(row);
-  });
-}
-
-addSubtaskBtn.addEventListener('click', () => {
-  const { phaseIndex, taskIndex } = breakdownOpen;
-  const task = state.phases[phaseIndex]?.tasks[taskIndex];
-  if (!task) return;
-  if (!Array.isArray(task.subtasks)) task.subtasks = [];
-  const newSub = {
+function makeDefaultSubtask(parentTask) {
+  return {
     name: '新子任务',
     detail: '',
-    start: task.start || '',
-    end: task.end || task.start || '',
+    start: parentTask.start || '',
+    end: parentTask.end || parentTask.start || '',
     status: '未开始',
     ownerClient: '',
     ownerVendor: '',
     priority: '中',
     deps: [],
   };
-  task.subtasks.push(newSub);
-  renderBreakdown();
-});
+}
 
-completeBreakdownBtn.addEventListener('click', completeBreakdown);
-breakdownDrawer.querySelector('.breakdown-close').addEventListener('click', closeBreakdown);
-breakdownDrawer.querySelector('.breakdown-backdrop').addEventListener('click', closeBreakdown);
+function openBreakdown(phaseIndex, taskIndex) {
+  if (isBreakdownOpen(phaseIndex, taskIndex)) {
+    closeBreakdown();
+    return;
+  }
+  breakdownOpen = { phaseIndex, taskIndex };
+  expandedPhaseIndexes.add(phaseIndex);
+  render();
+  requestAnimationFrame(() => {
+    document.querySelector('.inline-breakdown-panel')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+
+function closeBreakdown() {
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  render();
+}
+
+function saveBreakdown(collapse = false) {
+  const { phaseIndex, taskIndex } = breakdownOpen;
+  if (!Number.isInteger(phaseIndex) || !Number.isInteger(taskIndex)) return;
+  const task = state.phases[phaseIndex]?.tasks[taskIndex];
+  if (task && Array.isArray(task.subtasks)) {
+    task.subtasks.forEach((subtask) => {
+      ensureSubtaskDefaults(subtask, task);
+      normalizeSubtaskDates(subtask, task);
+    });
+  }
+  if (collapse) breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  render();
+}
+
+function addSubtask(phaseIndex, taskIndex) {
+  const task = state.phases[phaseIndex]?.tasks[taskIndex];
+  if (!task) return;
+  if (!Array.isArray(task.subtasks)) task.subtasks = [];
+  task.subtasks.push(makeDefaultSubtask(task));
+  breakdownOpen = { phaseIndex, taskIndex };
+  render();
+}
+
+function populateDependencyOptions(input, phase, taskIndex, subtask, subIndex) {
+  input.textContent = '';
+  const emptyOption = document.createElement('option');
+  emptyOption.value = '';
+  emptyOption.textContent = '无前置依赖';
+  input.append(emptyOption);
+  const candidates = [];
+  phase.tasks.forEach((siblingTask, sibIndex) => {
+    if (sibIndex !== taskIndex && siblingTask.name) {
+      candidates.push({ value: `task:${sibIndex}`, label: siblingTask.name });
+    }
+    if (sibIndex === taskIndex && Array.isArray(siblingTask.subtasks)) {
+      siblingTask.subtasks.forEach((st, stIdx) => {
+        if (stIdx !== subIndex && st.name) {
+          candidates.push({ value: `sub:${stIdx}`, label: `↳ ${st.name}` });
+        }
+      });
+    }
+  });
+  candidates.forEach((opt) => {
+    const option = document.createElement('option');
+    option.value = opt.value;
+    option.textContent = opt.label;
+    if ((subtask.deps || [])[0] === opt.value) option.selected = true;
+    input.append(option);
+  });
+  input.value = (subtask.deps || [])[0] || '';
+}
+
+function syncBreakdownDerivedViews() {
+  renderProjectStats();
+  renderRightPane();
+}
+
+function bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex) {
+  ensureSubtaskDefaults(subtask, task);
+  normalizeSubtaskDates(subtask, task);
+  row.style.setProperty('--status-color', subtaskStatusColors[subtask.status] || '#64748b');
+  row.style.setProperty('--priority-color', subtaskPriorityColors[subtask.priority] || '#64748b');
+  row.querySelectorAll('input, select').forEach((input) => {
+    const field = input.dataset.field;
+    if (field === 'deps') {
+      populateDependencyOptions(input, phase, taskIndex, subtask, subIndex);
+      input.addEventListener('change', () => {
+        subtask.deps = input.value ? [input.value] : [];
+        syncBreakdownDerivedViews();
+      });
+      return;
+    }
+    if (field === 'start') {
+      input.min = task.start || '';
+      input.max = task.end || '';
+    }
+    if (field === 'end') {
+      input.min = maxIsoDate([task.start, subtask.start]);
+      input.max = task.end || '';
+    }
+    input.value = subtask[field] ?? '';
+    const eventName = input.tagName === 'SELECT' ? 'change' : 'input';
+    input.addEventListener(eventName, () => {
+      if (field === 'start') {
+        subtask.start = clampIsoDate(input.value, task.start, task.end);
+        input.value = subtask.start;
+        subtask.end = clampIsoDate(subtask.end, maxIsoDate([task.start, subtask.start]), task.end);
+        const endInput = row.querySelector('[data-field="end"]');
+        if (endInput) {
+          endInput.min = maxIsoDate([task.start, subtask.start]);
+          endInput.value = subtask.end;
+        }
+      } else if (field === 'end') {
+        subtask.end = clampIsoDate(input.value, maxIsoDate([task.start, subtask.start]), task.end);
+        input.value = subtask.end;
+      } else {
+        subtask[field] = input.value;
+      }
+      if (field === 'status') {
+        row.style.setProperty('--status-color', subtaskStatusColors[input.value] || '#64748b');
+      }
+      if (field === 'priority') {
+        row.style.setProperty('--priority-color', subtaskPriorityColors[input.value] || '#64748b');
+      }
+      syncBreakdownDerivedViews();
+    });
+  });
+  row.querySelector('.delete-subtask').addEventListener('click', () => {
+    task.subtasks.splice(subIndex, 1);
+    render();
+  });
+}
+
+function makeBreakdownMeta(label, value) {
+  const item = makeElement('span', 'inline-breakdown-meta');
+  item.append(makeElement('strong', '', value), makeElement('small', '', label));
+  return item;
+}
+
+function renderBreakdownPanel(phaseIndex, taskIndex) {
+  const phase = state.phases[phaseIndex];
+  const task = phase?.tasks[taskIndex];
+  if (!phase || !task) return document.createDocumentFragment();
+  if (!Array.isArray(task.subtasks)) task.subtasks = [];
+  const progress = getTaskBreakdownProgress(task);
+  const panel = makeElement('div', 'inline-breakdown-panel');
+  const summary = makeElement('aside', 'inline-breakdown-summary');
+  summary.append(
+    makeElement('span', 'inline-breakdown-eyebrow', '当前分解对象'),
+    makeElement('h4', '', task.name || '未命名任务'),
+  );
+  const summaryMeta = makeElement('div', 'inline-breakdown-meta-grid');
+  summaryMeta.append(
+    makeBreakdownMeta('父任务区间', task.start && task.end ? `${fmtMd(task.start)}-${fmtMd(task.end)}` : '-'),
+    makeBreakdownMeta('计划用时', task.start && task.end ? `${daysInclusiveIso(task.start, task.end)}天` : '-'),
+    makeBreakdownMeta('子任务', `${task.subtasks.length}项`),
+    makeBreakdownMeta('完成度', progress === null ? '未拆解' : `${progress}%`),
+  );
+  summary.append(summaryMeta);
+
+  const editor = makeElement('section', 'inline-breakdown-editor');
+  const editorHead = makeElement('div', 'inline-breakdown-head');
+  const title = makeElement('div', '');
+  title.append(makeElement('span', 'inline-breakdown-eyebrow', 'Task Breakdown'), makeElement('h4', '', '任务分解'));
+  const actions = makeElement('div', 'inline-breakdown-actions');
+  const addBtn = makeElement('button', 'add-subtask-btn', '+ 添加子任务');
+  addBtn.type = 'button';
+  addBtn.addEventListener('click', () => addSubtask(phaseIndex, taskIndex));
+  const saveBtn = makeElement('button', 'complete-breakdown-btn', '保存分解');
+  saveBtn.type = 'button';
+  saveBtn.addEventListener('click', () => saveBreakdown(true));
+  actions.append(addBtn, saveBtn);
+  editorHead.append(title, actions);
+
+  const tableWrap = makeElement('div', 'breakdown-table-wrap inline-breakdown-table');
+  const tableHead = makeElement('div', 'breakdown-table-head');
+  ['子任务名称', '任务详情', '开始日期', '结束日期', '完成状态', '负责人(甲)', '负责人(乙)', '优先级', '前置依赖', '操作'].forEach((label) => {
+    tableHead.append(makeElement('span', '', label));
+  });
+  const list = makeElement('div', 'breakdown-list');
+  task.subtasks.forEach((subtask, subIndex) => {
+    const row = subtaskTemplate.content.firstElementChild.cloneNode(true);
+    row.classList.add('inline-subtask-row');
+    bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex);
+    list.append(row);
+  });
+  if (!task.subtasks.length) {
+    const empty = makeElement('div', 'inline-breakdown-empty');
+    empty.append(
+      makeElement('strong', '', '当前任务还没有子任务'),
+      makeElement('span', '', '点击“添加子任务”后，会在这里维护拆分后的任务明细。'),
+    );
+    list.append(empty);
+  }
+  tableWrap.append(tableHead, list);
+  editor.append(editorHead, tableWrap);
+  panel.append(summary, editor);
+  return panel;
+}
 
 
 const HOLIDAY_OVERRIDES = Object.freeze({
@@ -1322,18 +1433,23 @@ function render() {
   state.phases.forEach(normalizeTaskDates);
   syncProjectStart();
   state.title = state.title || DEFAULT_TITLE;
+  if (!isBreakdownTargetValid()) {
+    breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  }
   phaseList.textContent = '';
   renderProjectStats();
 
   state.phases.forEach((phase, phaseIndex) => {
     const phaseNode = phaseTemplate.content.firstElementChild.cloneNode(true);
     const isExpanded = expandedPhaseIndexes.has(phaseIndex);
+    const phaseHasOpenBreakdown = breakdownOpen.phaseIndex === phaseIndex;
     const milestoneCount = phase.tasks.filter((task) => task.milestone).length;
     const phaseProgress = getPhaseProgress(phase);
     phaseNode.dataset.phaseIndex = String(phaseIndex);
     phaseNode.style.setProperty('--phase-accent', phaseAccents[phaseIndex % phaseAccents.length]);
     phaseNode.classList.toggle('collapsed', !isExpanded);
     phaseNode.classList.toggle('expanded', isExpanded);
+    phaseNode.classList.toggle('has-open-breakdown', phaseHasOpenBreakdown);
     phaseNode.classList.toggle('phase-focused', focusedPhaseIndex === phaseIndex);
     phaseNode.querySelector('.phase-index').textContent = `P${phaseIndex + 1}`;
 
@@ -1404,6 +1520,8 @@ function render() {
     const taskList = phaseNode.querySelector('.task-list');
     phase.tasks.forEach((task, taskIndex) => {
       const taskNode = taskTemplate.content.firstElementChild.cloneNode(true);
+      const taskBreakdownOpen = isBreakdownOpen(phaseIndex, taskIndex);
+      taskNode.classList.toggle('task-row-breakdown-open', taskBreakdownOpen);
       updateHolidayStat(taskNode, task);
       const computedStatus = getTaskStatus(task);
       task.status = computedStatus;
@@ -1481,10 +1599,14 @@ function render() {
       const breakdownBtn = taskNode.querySelector('.breakdown-btn');
       if (breakdownBtn) {
         const subtaskCount = Array.isArray(task.subtasks) ? task.subtasks.length : 0;
-        breakdownBtn.textContent = subtaskCount ? `拆解 ${subtaskCount}` : '任务拆解';
+        breakdownBtn.textContent = taskBreakdownOpen ? '收起' : (subtaskCount ? `拆解 ${subtaskCount}` : '任务拆解');
+        breakdownBtn.setAttribute('aria-expanded', String(taskBreakdownOpen));
         breakdownBtn.addEventListener('click', () => openBreakdown(phaseIndex, taskIndex));
       }
       taskList.append(taskNode);
+      if (taskBreakdownOpen) {
+        taskList.append(renderBreakdownPanel(phaseIndex, taskIndex));
+      }
     });
 
     phaseNode.querySelector('.add-task').addEventListener('click', () => {
@@ -1691,7 +1813,7 @@ if (ganttModal) {
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
-    else if (breakdownDrawer && breakdownDrawer.classList.contains('open')) closeBreakdown();
+    else if (isBreakdownTargetValid()) closeBreakdown();
   }
 });
 
