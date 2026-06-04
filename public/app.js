@@ -91,6 +91,8 @@ const ZOOM_MIN = 0.2;
 const ZOOM_MAX = 1.4;
 const ZOOM_STEP = 0.05;
 const FIT_PREVIEW_MIN_ZOOM = 0.08;
+const VERSION_HISTORY_STORAGE_KEY = 'litegantt.versionHistory.v1';
+const VERSION_HISTORY_LIMIT = 30;
 const CODE_FINGERPRINT = Object.freeze({
   author: 'Caius',
   project: 'Project Gantt Builder',
@@ -110,6 +112,16 @@ const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
+const saveVersionBtn = document.querySelector('#saveVersionBtn');
+const versionHistoryBtn = document.querySelector('#versionHistoryBtn');
+const versionHistoryBackdrop = document.querySelector('#versionHistoryBackdrop');
+const versionHistoryDrawer = document.querySelector('#versionHistoryDrawer');
+const closeVersionHistoryBtn = document.querySelector('#closeVersionHistoryBtn');
+const versionNameInput = document.querySelector('#versionNameInput');
+const drawerSaveVersionBtn = document.querySelector('#drawerSaveVersionBtn');
+const versionList = document.querySelector('#versionList');
+const versionEmptyState = document.querySelector('#versionEmptyState');
+const versionHistoryCount = document.querySelector('#versionHistoryCount');
 const importExcelBtn = document.querySelector('#importExcelBtn');
 const importExcelInput = document.querySelector('#importExcelInput');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
@@ -874,6 +886,194 @@ function makeElement(tagName, className, text = '') {
   return element;
 }
 
+function readVersionHistory() {
+  try {
+    const raw = window.localStorage.getItem(VERSION_HISTORY_STORAGE_KEY);
+    const records = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(records)) return [];
+    return records
+      .filter((record) => record && record.id && record.project && Array.isArray(record.project.phases))
+      .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+      .slice(0, VERSION_HISTORY_LIMIT);
+  } catch {
+    return [];
+  }
+}
+
+function writeVersionHistory(records) {
+  try {
+    window.localStorage.setItem(VERSION_HISTORY_STORAGE_KEY, JSON.stringify(records.slice(0, VERSION_HISTORY_LIMIT)));
+  } catch {
+    throw new Error('历史版本保存失败，请检查浏览器本地存储空间');
+  }
+}
+
+function formatVersionTime(value) {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) return '未知时间';
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+function makeDefaultVersionName() {
+  return `计划版本 ${formatVersionTime(new Date().toISOString())}`;
+}
+
+function getProjectVersionSummary(project) {
+  const phases = Array.isArray(project?.phases) ? project.phases : [];
+  const tasks = phases.flatMap((phase) => Array.isArray(phase.tasks) ? phase.tasks : []);
+  const dates = [];
+  phases.forEach((phase) => {
+    dates.push(phase.start, phase.end);
+    (Array.isArray(phase.tasks) ? phase.tasks : []).forEach((task) => dates.push(task.start, task.end));
+  });
+  return {
+    phaseCount: phases.length,
+    taskCount: tasks.length,
+    milestoneCount: tasks.filter((task) => task.milestone).length,
+    subtaskCount: tasks.reduce((sum, task) => sum + (Array.isArray(task.subtasks) ? task.subtasks.length : 0), 0),
+    start: minIsoDate(dates),
+    end: maxIsoDate(dates),
+  };
+}
+
+function createVersionRecord(name = '') {
+  const project = JSON.parse(JSON.stringify(toPayload()));
+  const createdAt = new Date().toISOString();
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    name: String(name || '').trim() || makeDefaultVersionName(),
+    createdAt,
+    project,
+    summary: getProjectVersionSummary(project),
+  };
+}
+
+function saveCurrentVersion(name = '') {
+  try {
+    const record = createVersionRecord(name);
+    const records = [record, ...readVersionHistory()].slice(0, VERSION_HISTORY_LIMIT);
+    writeVersionHistory(records);
+    if (versionNameInput) versionNameInput.value = '';
+    renderVersionHistory();
+    setStatus(`已保存版本：${record.name}`, 'ok');
+    return record;
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+    return null;
+  }
+}
+
+function openVersionHistory() {
+  renderVersionHistory();
+  versionHistoryDrawer?.classList.add('open');
+  versionHistoryBackdrop?.classList.add('open');
+  versionHistoryDrawer?.setAttribute('aria-hidden', 'false');
+  versionHistoryBackdrop?.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('version-history-open');
+  requestAnimationFrame(() => versionNameInput?.focus());
+}
+
+function closeVersionHistory() {
+  versionHistoryDrawer?.classList.remove('open');
+  versionHistoryBackdrop?.classList.remove('open');
+  versionHistoryDrawer?.setAttribute('aria-hidden', 'true');
+  versionHistoryBackdrop?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('version-history-open');
+}
+
+function makeVersionMetaChips(summary) {
+  const meta = makeElement('div', 'version-card-meta');
+  const range = summary?.start && summary?.end ? `${summary.start} - ${summary.end}` : '未设置周期';
+  [
+    `${summary?.phaseCount || 0} 个阶段`,
+    `${summary?.taskCount || 0} 项任务`,
+    `${summary?.milestoneCount || 0} 个里程碑`,
+    `${summary?.subtaskCount || 0} 个子任务`,
+    range,
+  ].forEach((text) => meta.append(makeElement('span', '', text)));
+  return meta;
+}
+
+function restoreVersion(record) {
+  if (!window.confirm(`恢复到版本「${record.name}」？当前页面未保存的修改会被覆盖。`)) return;
+  applyImportedProject(record.project);
+  closeVersionHistory();
+  setStatus(`已恢复版本：${record.name}`, 'ok');
+}
+
+function deleteVersion(recordId) {
+  const records = readVersionHistory();
+  const target = records.find((record) => record.id === recordId);
+  if (!target) return;
+  if (!window.confirm(`删除版本「${target.name}」？`)) return;
+  writeVersionHistory(records.filter((record) => record.id !== recordId));
+  renderVersionHistory();
+  setStatus(`已删除版本：${target.name}`, 'ok');
+}
+
+async function exportVersionExcel(record, triggerButton) {
+  triggerButton.disabled = true;
+  setStatus(`正在导出历史版本：${record.name}`);
+  try {
+    const response = await fetch(apiUrl('/api/export-xlsx'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(record.project),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || `历史版本 Excel 生成失败：${response.status}`);
+    }
+
+    await downloadResponseBlob(response, 'xlsx');
+    setStatus(`历史版本 Excel 已生成：${record.name}`, 'ok');
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+  } finally {
+    triggerButton.disabled = false;
+  }
+}
+
+function renderVersionHistory() {
+  if (!versionList || !versionEmptyState) return;
+  const records = readVersionHistory();
+  versionList.textContent = '';
+  versionEmptyState.hidden = records.length > 0;
+  if (versionHistoryCount) versionHistoryCount.textContent = `${records.length} 个版本`;
+
+  records.forEach((record) => {
+    const summary = record.summary || getProjectVersionSummary(record.project);
+    const card = makeElement('article', 'version-card');
+    const head = makeElement('div', 'version-card-head');
+    head.append(
+      makeElement('strong', '', record.name || '未命名版本'),
+      makeElement('span', '', formatVersionTime(record.createdAt)),
+    );
+
+    const actions = makeElement('div', 'version-card-actions');
+    const restoreBtn = makeElement('button', 'restore-version-btn', '恢复');
+    const exportBtn = makeElement('button', 'export-version-btn', '导出 Excel');
+    const deleteBtn = makeElement('button', 'delete-version-btn', '删除');
+    restoreBtn.type = 'button';
+    exportBtn.type = 'button';
+    deleteBtn.type = 'button';
+    restoreBtn.addEventListener('click', () => restoreVersion(record));
+    exportBtn.addEventListener('click', () => exportVersionExcel(record, exportBtn));
+    deleteBtn.addEventListener('click', () => deleteVersion(record.id));
+    actions.append(restoreBtn, exportBtn, deleteBtn);
+
+    card.append(head, makeVersionMetaChips(summary), actions);
+    versionList.append(card);
+  });
+}
+
 function makePhaseSummaryPill(label, value) {
   const pill = makeElement('span', 'phase-summary-pill');
   pill.append(
@@ -1384,6 +1584,18 @@ function getDefaultTaskEnd(start, phase) {
   return clampIsoDate(addDaysIso(start, DEFAULT_TASK_DAYS), start, phase.end);
 }
 
+function getNewTaskDates(phase) {
+  const latestTaskEnd = maxIsoDate((Array.isArray(phase.tasks) ? phase.tasks : [])
+    .map((task) => task.end || task.start));
+  const phaseStart = phase.start || new Date().toISOString().slice(0, 10);
+  const baseStart = latestTaskEnd ? addDaysIso(latestTaskEnd, 1) : phaseStart;
+  const start = clampIsoDate(baseStart, phase.start, phase.end);
+  return {
+    start,
+    end: getDefaultTaskEnd(start, phase),
+  };
+}
+
 function normalizeTaskDates(phase) {
   normalizePhaseDates(phase);
   phase.tasks.forEach((task) => {
@@ -1626,11 +1838,11 @@ function render() {
     });
 
     phaseNode.querySelector('.add-task').addEventListener('click', () => {
-      const start = phase.start || new Date().toISOString().slice(0, 10);
+      const { start, end } = getNewTaskDates(phase);
       phase.tasks.push({
         name: '新任务',
         start,
-        end: getDefaultTaskEnd(start, phase),
+        end,
         status: '未开始',
         progress: 0,
         endTouched: false,
@@ -1871,6 +2083,11 @@ if (importExcelBtn && importExcelInput) {
   importExcelBtn.addEventListener('click', () => importExcelInput.click());
   importExcelInput.addEventListener('change', () => importExcel(importExcelInput.files?.[0]));
 }
+if (saveVersionBtn) saveVersionBtn.addEventListener('click', () => saveCurrentVersion());
+if (versionHistoryBtn) versionHistoryBtn.addEventListener('click', openVersionHistory);
+if (drawerSaveVersionBtn) drawerSaveVersionBtn.addEventListener('click', () => saveCurrentVersion(versionNameInput?.value));
+if (closeVersionHistoryBtn) closeVersionHistoryBtn.addEventListener('click', closeVersionHistory);
+if (versionHistoryBackdrop) versionHistoryBackdrop.addEventListener('click', closeVersionHistory);
 if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportExcel);
 if (exportImageBtn) exportImageBtn.addEventListener('click', exportImage);
 
@@ -1899,7 +2116,8 @@ if (ganttModal) {
 // ESC key closes modal
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
+    if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
+    else if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
     else if (isBreakdownTargetValid()) closeBreakdown();
   }
 });
