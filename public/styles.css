@@ -182,7 +182,7 @@ button {
 
 .top-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(118px, auto)) minmax(150px, 230px);
+  grid-template-columns: repeat(3, minmax(118px, auto)) minmax(150px, 230px);
   gap: 10px;
   align-items: center;
   justify-content: end;
@@ -194,6 +194,7 @@ button {
   box-shadow: var(--tight-shadow);
 }
 
+.excel-import-btn,
 .excel-export-btn,
 .image-export-btn {
   white-space: nowrap;
@@ -1014,6 +1015,7 @@ input[readonly] {
 
   #addPhaseBtn,
   #resetBtn,
+  #importExcelBtn,
   #exportExcelBtn,
   #exportImageBtn,
   #previewGanttBtn {

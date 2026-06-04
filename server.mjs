@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { generateGanttPng, generateGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
+import { generateGanttPng, generateGanttXlsx, importGanttXlsx } from './lib/generate-gantt-xlsx.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.join(__dirname, 'public');
@@ -59,6 +59,17 @@ async function readJsonBody(request) {
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+}
+
+async function readBinaryBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 30 * 1024 * 1024) throw new Error('Excel 文件过大，请控制在 30MB 以内');
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
 }
 
 function readLocalPage(targetPort, timeoutMs = 1200) {
@@ -135,6 +146,14 @@ const server = http.createServer(async (request, response) => {
         ...getCorsHeaders(request),
       });
       response.end(fileBuffer);
+      return;
+    }
+
+    if (request.method === 'POST' && request.url === '/api/import-xlsx') {
+      const fileBuffer = await readBinaryBody(request);
+      if (!fileBuffer.length) throw new Error('请选择需要导入的 Excel 文件');
+      const project = await importGanttXlsx(fileBuffer);
+      sendJson(request, response, 200, { project });
       return;
     }
 

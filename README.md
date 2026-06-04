@@ -17,10 +17,10 @@ http://127.0.0.1:4173
 
 ## 部署架构
 
-当前版本提供 Excel 与 4K PNG 图片导出。生产环境建议采用：
+当前版本提供 Excel 导入、Excel 导出与 4K PNG 图片导出。生产环境建议采用：
 
 - 前端：Cloudflare Pages，仅部署 `public` 目录。
-- 后端 API：Render Docker Web Service，部署项目根目录，用于生成 Excel 和 4K PNG 图片。
+- 后端 API：Render Docker Web Service，部署项目根目录，用于导入/生成 Excel 和 4K PNG 图片。
 
 本地 `npm start` 会同时提供静态页面和 Excel 导出接口。
 
@@ -35,6 +35,7 @@ http://127.0.0.1:4173
 
 后端接口：
 
+- `POST /api/import-xlsx`：读取由本工具导出的 Excel，并回填项目计划数据。
 - `POST /api/export-xlsx`：生成 Excel。
 - `POST /api/export-png`：生成 4K PNG 图片。
 
@@ -71,5 +72,6 @@ window.LITEGANTT_API_BASE = 'https://你的-render-api地址';
 - 阶段行加粗，细分任务行不加粗
 - 甘特条为胶囊样式
 - Milestone 用红色实心五角星和文本标记
+- 支持导入由本工具导出的 Excel `.xlsx`
 - 支持导出 Excel `.xlsx`
 - 支持导出 4K PNG 图片 `.png`

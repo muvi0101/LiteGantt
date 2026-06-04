@@ -110,6 +110,8 @@ const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
+const importExcelBtn = document.querySelector('#importExcelBtn');
+const importExcelInput = document.querySelector('#importExcelInput');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
 const exportImageBtn = document.querySelector('#exportImageBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
@@ -125,6 +127,13 @@ let currentPreviewZoom = 1;
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
+
+const excelImportLabels = {
+  action: '导入 Excel',
+  busy: '导入中...',
+  done: 'Excel 已导入，页面已自动填写。',
+  status: '正在读取 Excel，请稍候。',
+};
 
 const excelExportLabels = {
   action: '导出 Excel',
@@ -519,6 +528,13 @@ function getDownloadFileName(response, fallbackExt = 'xlsx') {
   const asciiMatch = header.match(/filename="?([^";]+)"?/);
   if (asciiMatch) return asciiMatch[1];
   return `项目计划甘特图-${Date.now()}.${fallbackExt}`;
+}
+
+function setExcelImporting(busy) {
+  if (!importExcelBtn) return;
+  importExcelBtn.disabled = busy;
+  importExcelBtn.textContent = busy ? excelImportLabels.busy : excelImportLabels.action;
+  if (importExcelInput) importExcelInput.disabled = busy;
 }
 
 function setExcelExporting(busy) {
@@ -1667,7 +1683,7 @@ function toPayload() {
 function normalizeImportedProject(project) {
   const phases = Array.isArray(project?.phases) ? project.phases : [];
   if (!phases.length) throw new Error('Excel 中没有可导入的项目阶段');
-  return {
+  const imported = {
     title: String(project.title || '甘特图 - 项目进度计划表（周视图）').trim(),
     projectStart: project.projectStart || '',
     phases: phases.map((phase, phaseIndex) => ({
@@ -1696,6 +1712,73 @@ function normalizeImportedProject(project) {
       })),
     })),
   };
+  imported.phases.forEach((phase) => {
+    phase.tasks.forEach((task) => {
+      task.subtasks.forEach((subtask) => {
+        ensureSubtaskDefaults(subtask, task);
+        normalizeSubtaskDates(subtask, task);
+      });
+    });
+    normalizeTaskDates(phase);
+  });
+  return imported;
+}
+
+function applyImportedProject(project) {
+  state = normalizeImportedProject(project);
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  focusedPhaseIndex = null;
+  if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
+  focusPhaseTimer = null;
+  expandedPhaseIndexes = new Set(state.phases.map((_, index) => index));
+  previewZoomMode = 'fit';
+  render();
+  requestAnimationFrame(() => applyPreviewZoom());
+}
+
+function getProjectTaskCount(project = state) {
+  return project.phases.reduce((sum, phase) => sum + phase.tasks.length, 0);
+}
+
+function validateExcelFile(file) {
+  if (!file) throw new Error('请选择需要导入的 Excel 文件');
+  if (!/\.xlsx$/i.test(file.name || '')) throw new Error('请导入从本工具导出的 .xlsx 文件');
+}
+
+async function importExcel(file) {
+  try {
+    validateExcelFile(file);
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+    if (importExcelInput) importExcelInput.value = '';
+    return;
+  }
+
+  setExcelImporting(true);
+  setStatus(excelImportLabels.status);
+
+  try {
+    const response = await fetch(apiUrl('/api/import-xlsx'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': file.type || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      },
+      body: await file.arrayBuffer(),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || `Excel 导入失败：${response.status}`);
+    }
+
+    applyImportedProject(payload.project || payload);
+    setStatus(`${excelImportLabels.done} 共 ${state.phases.length} 个阶段、${getProjectTaskCount()} 项任务。`, 'ok');
+  } catch (error) {
+    setStatus(error instanceof Error ? error.message : String(error), 'error');
+  } finally {
+    setExcelImporting(false);
+    if (importExcelInput) importExcelInput.value = '';
+  }
 }
 
 async function exportExcel() {
@@ -1784,6 +1867,10 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
   setStatus('已恢复示例数据。');
 });
 
+if (importExcelBtn && importExcelInput) {
+  importExcelBtn.addEventListener('click', () => importExcelInput.click());
+  importExcelInput.addEventListener('change', () => importExcel(importExcelInput.files?.[0]));
+}
 if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportExcel);
 if (exportImageBtn) exportImageBtn.addEventListener('click', exportImage);
 
