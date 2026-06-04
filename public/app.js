@@ -122,6 +122,9 @@ const drawerSaveVersionBtn = document.querySelector('#drawerSaveVersionBtn');
 const versionList = document.querySelector('#versionList');
 const versionEmptyState = document.querySelector('#versionEmptyState');
 const versionHistoryCount = document.querySelector('#versionHistoryCount');
+const ioMenu = document.querySelector('.io-menu');
+const ioMenuBtn = document.querySelector('#ioMenuBtn');
+const ioMenuPanel = document.querySelector('#ioMenuPanel');
 const importExcelBtn = document.querySelector('#importExcelBtn');
 const importExcelInput = document.querySelector('#importExcelInput');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
@@ -184,7 +187,6 @@ function getSubtasks(phaseIndex, taskIndex) {
 
 function ensureSubtaskDefaults(subtask, parentTask) {
   subtask.name = String(subtask.name || '').trim() || '新子任务';
-  subtask.detail = subtask.detail || '';
   subtask.start = subtask.start || parentTask?.start || '';
   subtask.end = subtask.end || parentTask?.end || subtask.start || '';
   subtask.status = subtaskStatuses.includes(subtask.status) ? subtask.status : '未开始';
@@ -213,7 +215,6 @@ function normalizeSubtaskDates(subtask, parentTask) {
 function makeDefaultSubtask(parentTask) {
   return {
     name: '新子任务',
-    detail: '',
     start: parentTask.start || '',
     end: parentTask.end || parentTask.start || '',
     status: '未开始',
@@ -398,7 +399,7 @@ function renderBreakdownPanel(phaseIndex, taskIndex) {
 
   const tableWrap = makeElement('div', 'breakdown-table-wrap inline-breakdown-table');
   const tableHead = makeElement('div', 'breakdown-table-head');
-  ['子任务名称', '任务详情', '开始日期', '结束日期', '完成状态', '负责人(甲)', '负责人(乙)', '优先级', '前置依赖', '操作'].forEach((label) => {
+  ['子任务名称', '优先级', '开始日期', '结束日期', '完成状态', '客户负责人', '我方负责人', '前置依赖', '操作'].forEach((label) => {
     tableHead.append(makeElement('span', '', label));
   });
   const list = makeElement('div', 'breakdown-list');
@@ -738,20 +739,11 @@ function getTaskBreakdownProgress(task) {
 }
 
 function normalizeTaskProgress(task) {
-  const breakdownProgress = getTaskBreakdownProgress(task);
-  if (breakdownProgress !== null) return breakdownProgress;
-  return 100;
+  return defaultProgressForStatus(task?.status);
 }
 
 function getTaskStatus(task) {
-  const subtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
-  if (!subtasks.length) return '已完成';
-
-  const progress = normalizeTaskProgress(task);
-  if (progress >= 100) return '已完成';
-  if (isIsoDate(task?.end) && compareIsoDates(task.end, getTodayIso()) < 0) return '延期';
-  const hasStartedSubtask = subtasks.some((subtask) => ['进行中', '已完成', '已暂停'].includes(subtask.status));
-  return progress > 0 || hasStartedSubtask ? '进行中' : '未开始';
+  return normalizeTaskStatus(task?.status);
 }
 
 function getPhaseProgress(phase) {
@@ -1754,15 +1746,6 @@ function render() {
       const computedStatus = getTaskStatus(task);
       task.status = computedStatus;
       task.progress = normalizeTaskProgress(task);
-      const statusDisplay = taskNode.querySelector('[data-field="status"]');
-      if (statusDisplay) {
-        statusDisplay.textContent = computedStatus;
-        statusDisplay.dataset.status = computedStatus;
-        statusDisplay.style.setProperty('--status-color', taskStatusColor(computedStatus));
-        statusDisplay.title = Array.isArray(task.subtasks) && task.subtasks.length
-          ? `由 ${task.subtasks.length} 项任务拆解自动计算`
-          : '暂无任务拆解，默认按已完成处理';
-      }
       taskNode.querySelectorAll('input, select').forEach((input) => {
         const field = input.dataset.field;
         if (field === 'milestone') {
@@ -1813,6 +1796,16 @@ function render() {
             task.end = clampIsoDate(input.value, maxIsoDate([phase.start, task.start]), phase.end);
             task.endTouched = true;
             render();
+          });
+        } else if (field === 'status') {
+          input.value = computedStatus;
+          input.style.setProperty('--status-color', taskStatusColor(computedStatus));
+          input.addEventListener('change', () => {
+            task.status = normalizeTaskStatus(input.value);
+            task.progress = defaultProgressForStatus(task.status);
+            input.style.setProperty('--status-color', taskStatusColor(task.status));
+            renderProjectStats();
+            renderRightPane();
           });
         } else {
           bindInput(input, () => task[field], (value) => {
@@ -1878,7 +1871,6 @@ function toPayload() {
         markerGapPx: task.markerGapPx,
         subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map((st) => ({
           name: String(st.name || '').trim(),
-          detail: String(st.detail || '').trim(),
           start: st.start || task.start || '',
           end: st.end || task.end || '',
           status: subtaskStatuses.includes(st.status) ? st.status : '未开始',
@@ -1912,7 +1904,6 @@ function normalizeImportedProject(project) {
         markerGapPx: task.markerGapPx,
         subtasks: (Array.isArray(task.subtasks) ? task.subtasks : []).map((st) => ({
           name: String(st.name || '').trim(),
-          detail: String(st.detail || '').trim(),
           start: st.start || task.start || '',
           end: st.end || task.end || '',
           status: subtaskStatuses.includes(st.status) ? st.status : '未开始',
@@ -2043,6 +2034,18 @@ async function exportImage() {
   }
 }
 
+function closeIoMenu() {
+  if (!ioMenu || !ioMenuBtn) return;
+  ioMenu.classList.remove('open');
+  ioMenuBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleIoMenu() {
+  if (!ioMenu || !ioMenuBtn) return;
+  const isOpen = ioMenu.classList.toggle('open');
+  ioMenuBtn.setAttribute('aria-expanded', String(isOpen));
+}
+
 document.querySelector('#addPhaseBtn').addEventListener('click', () => {
   const { start, end } = getNewPhaseDates();
   state.phases.push({
@@ -2079,8 +2082,21 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
   setStatus('已恢复示例数据。');
 });
 
+if (ioMenuBtn) ioMenuBtn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleIoMenu();
+});
+if (ioMenuPanel) ioMenuPanel.addEventListener('click', (event) => event.stopPropagation());
+document.addEventListener('click', (event) => {
+  if (!ioMenu?.classList.contains('open')) return;
+  if (event.target instanceof Node && ioMenu.contains(event.target)) return;
+  closeIoMenu();
+});
 if (importExcelBtn && importExcelInput) {
-  importExcelBtn.addEventListener('click', () => importExcelInput.click());
+  importExcelBtn.addEventListener('click', () => {
+    closeIoMenu();
+    importExcelInput.click();
+  });
   importExcelInput.addEventListener('change', () => importExcel(importExcelInput.files?.[0]));
 }
 if (saveVersionBtn) saveVersionBtn.addEventListener('click', () => saveCurrentVersion());
@@ -2088,8 +2104,14 @@ if (versionHistoryBtn) versionHistoryBtn.addEventListener('click', openVersionHi
 if (drawerSaveVersionBtn) drawerSaveVersionBtn.addEventListener('click', () => saveCurrentVersion(versionNameInput?.value));
 if (closeVersionHistoryBtn) closeVersionHistoryBtn.addEventListener('click', closeVersionHistory);
 if (versionHistoryBackdrop) versionHistoryBackdrop.addEventListener('click', closeVersionHistory);
-if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportExcel);
-if (exportImageBtn) exportImageBtn.addEventListener('click', exportImage);
+if (exportExcelBtn) exportExcelBtn.addEventListener('click', () => {
+  closeIoMenu();
+  exportExcel();
+});
+if (exportImageBtn) exportImageBtn.addEventListener('click', () => {
+  closeIoMenu();
+  exportImage();
+});
 
 // Gantt modal open/close
 function openGanttModal() {
@@ -2116,7 +2138,8 @@ if (ganttModal) {
 // ESC key closes modal
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
+    if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
+    else if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
     else if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
     else if (isBreakdownTargetValid()) closeBreakdown();
   }

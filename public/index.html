@@ -26,22 +26,27 @@
         </div>
       </div>
       <div class="top-actions" aria-label="输出操作">
-        <button id="saveVersionBtn" class="version-save-btn" type="button">
-          <span>保存版本</span>
-        </button>
-        <button id="versionHistoryBtn" class="version-history-btn" type="button">
-          <span>历史版本</span>
-        </button>
-        <button id="importExcelBtn" class="import-btn excel-import-btn" type="button">
-          <span>导入 Excel</span>
-        </button>
+        <div class="version-action-group" aria-label="版本控制">
+          <button id="saveVersionBtn" class="version-save-btn" type="button">
+            <span>保存版本</span>
+          </button>
+          <button id="versionHistoryBtn" class="version-history-btn" type="button">
+            <span>历史版本</span>
+          </button>
+        </div>
+        <div class="io-menu" aria-label="数据导入导出">
+          <button id="ioMenuBtn" class="io-menu-btn" type="button" aria-expanded="false" aria-controls="ioMenuPanel">
+            <span class="io-menu-icon" aria-hidden="true"></span>
+            <span>导入/导出</span>
+            <span class="io-menu-caret" aria-hidden="true">▼</span>
+          </button>
+          <div id="ioMenuPanel" class="io-menu-panel" role="menu">
+            <button id="importExcelBtn" class="io-menu-item" type="button" role="menuitem">导入 Excel</button>
+            <button id="exportExcelBtn" class="io-menu-item" type="button" role="menuitem">导出 Excel</button>
+            <button id="exportImageBtn" class="io-menu-item" type="button" role="menuitem">导出图片</button>
+          </div>
+        </div>
         <input id="importExcelInput" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-        <button id="exportExcelBtn" class="primary-btn excel-export-btn" type="button">
-          <span>导出 Excel</span>
-        </button>
-        <button id="exportImageBtn" class="download-btn image-export-btn" type="button">
-          <span>导出图片</span>
-        </button>
         <div id="statusBox" class="status-box">待生成</div>
       </div>
     </header>
@@ -169,9 +174,13 @@
           <span>子任务名称</span>
           <input data-field="name" type="text" />
         </label>
-        <label class="bd-field bd-detail-field">
-          <span>任务详情</span>
-          <input data-field="detail" type="text" />
+        <label class="bd-field bd-priority-field">
+          <span>优先级</span>
+          <select class="custom-select" data-field="priority">
+            <option value="高">高</option>
+            <option value="中" selected>中</option>
+            <option value="低">低</option>
+          </select>
         </label>
         <label class="bd-field bd-start-field">
           <span>开始日期</span>
@@ -183,7 +192,7 @@
         </label>
         <label class="bd-field bd-status-field">
           <span>完成状态</span>
-          <select data-field="status">
+          <select class="custom-select" data-field="status">
             <option value="未开始">未开始</option>
             <option value="进行中">进行中</option>
             <option value="已完成">已完成</option>
@@ -192,20 +201,12 @@
           </select>
         </label>
         <label class="bd-field bd-client-field">
-          <span>负责人(甲)</span>
+          <span>客户负责人</span>
           <input data-field="ownerClient" type="text" />
         </label>
         <label class="bd-field bd-vendor-field">
-          <span>负责人(乙)</span>
+          <span>我方负责人</span>
           <input data-field="ownerVendor" type="text" />
-        </label>
-        <label class="bd-field bd-priority-field">
-          <span>优先级</span>
-          <select data-field="priority">
-            <option value="高">高</option>
-            <option value="中" selected>中</option>
-            <option value="低">低</option>
-          </select>
         </label>
         <label class="bd-field bd-deps-field">
           <span>前置依赖</span>
@@ -282,7 +283,12 @@
         </label>
         <label class="task-field task-status-field">
           <span>任务状态</span>
-          <strong class="task-status-display" data-field="status">未开始</strong>
+          <select class="task-status-select custom-select" data-field="status">
+            <option value="未开始">未开始</option>
+            <option value="进行中">进行中</option>
+            <option value="已完成">已完成</option>
+            <option value="延期">延期</option>
+          </select>
         </label>
         <div class="task-field task-holiday-field">
           <span>节假日统计</span>
