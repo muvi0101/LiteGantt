@@ -182,25 +182,27 @@ button {
 
 .top-actions {
   display: grid;
-  grid-template-columns: auto auto minmax(150px, 230px);
-  gap: 10px;
+  grid-template-columns: auto auto minmax(120px, 184px);
+  gap: 8px;
   align-items: center;
   justify-content: end;
   min-width: 0;
-  padding: 6px;
-  border: 1px solid rgba(45, 63, 92, 0.12);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.58);
-  box-shadow: var(--tight-shadow);
+  padding: 5px;
+  border: 1px solid rgba(207, 225, 244, 0.78);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+  box-shadow: 0 10px 24px rgba(15, 59, 94, 0.07);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .version-action-group {
   display: grid;
   grid-template-columns: repeat(2, minmax(108px, auto));
-  gap: 8px;
+  gap: 7px;
   align-items: center;
-  padding-right: 8px;
-  border-right: 1px solid rgba(45, 63, 92, 0.12);
+  padding-right: 9px;
+  border-right: 1px solid rgba(207, 225, 244, 0.78);
 }
 
 .io-menu {
@@ -219,7 +221,7 @@ button {
 .version-history-btn,
 .io-menu-btn {
   min-width: 112px;
-  min-height: 40px;
+  min-height: 38px;
   padding: 0 16px;
   border: 1px solid transparent;
   border-radius: 10px;
@@ -229,15 +231,16 @@ button {
 
 .version-save-btn {
   color: #fff;
-  background: linear-gradient(180deg, #18b7ef, #087bd3);
-  box-shadow: 0 12px 26px rgba(8, 123, 211, 0.2);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(180deg, #0a84ff, #087bd3);
+  box-shadow: 0 10px 20px rgba(8, 123, 211, 0.18);
 }
 
 .version-history-btn {
-  color: #0f3b5e;
-  border-color: rgba(0, 122, 255, 0.22);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(236, 247, 255, 0.82));
-  box-shadow: 0 10px 22px rgba(15, 59, 94, 0.08);
+  color: #12345a;
+  border-color: rgba(191, 215, 242, 0.9);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 252, 255, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
 }
 
 .version-save-btn:hover,
@@ -251,20 +254,32 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #0f3b5e;
-  border-color: rgba(0, 122, 255, 0.2);
+  color: #17456f;
+  border-color: rgba(207, 225, 244, 0.9);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(237, 248, 255, 0.84));
-  box-shadow: 0 10px 22px rgba(15, 59, 94, 0.08);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(250, 253, 255, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+}
+
+.version-history-btn:hover,
+.io-menu-btn:hover {
+  border-color: rgba(10, 132, 255, 0.3);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 1), rgba(241, 248, 255, 0.92));
+  box-shadow: 0 8px 18px rgba(10, 100, 199, 0.08);
+}
+
+.version-save-btn:hover {
+  box-shadow: 0 13px 24px rgba(8, 123, 211, 0.23);
 }
 
 .io-menu-icon {
   position: relative;
   width: 17px;
   height: 13px;
-  border: 1.8px solid #0b86dc;
+  border: 1.8px solid #0a64c7;
   border-radius: 3px;
-  background: linear-gradient(180deg, rgba(50, 173, 230, 0.2), rgba(255, 255, 255, 0.1));
+  background: rgba(10, 132, 255, 0.08);
 }
 
 .io-menu-icon::before {
@@ -274,14 +289,14 @@ button {
   left: 1px;
   width: 8px;
   height: 5px;
-  border: 1.8px solid #0b86dc;
+  border: 1.8px solid #0a64c7;
   border-bottom: 0;
   border-radius: 3px 3px 0 0;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.95);
 }
 
 .io-menu-caret {
-  color: #1976b8;
+  color: #0a64c7;
   font-size: 10px;
   line-height: 1;
   transition: transform 0.16s ease;
@@ -300,11 +315,11 @@ button {
   gap: 6px;
   width: 168px;
   padding: 8px;
-  border: 1px solid rgba(0, 122, 255, 0.16);
+  border: 1px solid rgba(207, 225, 244, 0.92);
   border-radius: 13px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(241, 249, 255, 0.94));
-  box-shadow: 0 18px 38px rgba(15, 59, 94, 0.16);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 251, 255, 0.96));
+  box-shadow: 0 18px 32px rgba(15, 59, 94, 0.12);
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px) scale(0.98);
@@ -323,7 +338,7 @@ button {
   padding: 0 12px;
   border: 1px solid transparent;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.62);
+  background: transparent;
   color: #12345a;
   font-size: 13px;
   font-weight: 780;
@@ -332,8 +347,8 @@ button {
 }
 
 .io-menu-item:hover {
-  border-color: rgba(0, 122, 255, 0.18);
-  background: rgba(228, 243, 255, 0.82);
+  border-color: rgba(10, 132, 255, 0.18);
+  background: rgba(232, 244, 255, 0.74);
   transform: translateX(1px);
 }
 
@@ -548,7 +563,6 @@ button {
   align-content: center;
 }
 
-.action-stack .secondary-btn,
 .action-stack .danger-btn,
 .action-stack .ghost-btn {
   height: 36px;
@@ -557,16 +571,6 @@ button {
   min-width: 0;
   padding: 0 10px;
   white-space: nowrap;
-}
-
-.action-stack .secondary-btn {
-  grid-column: 1 / -1;
-  min-height: 40px;
-  color: #fff;
-  background:
-    linear-gradient(180deg, rgba(37, 153, 255, 0.95), rgba(0, 102, 214, 0.95));
-  border-color: rgba(0, 102, 214, 0.16);
-  box-shadow: 0 15px 30px rgba(0, 102, 214, 0.18);
 }
 
 .action-stack .danger-btn {
@@ -624,6 +628,7 @@ button {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: auto auto auto;
+  align-content: start;
   gap: 0;
   min-width: 0;
   min-height: 0;
@@ -703,6 +708,7 @@ button {
 }
 
 .left-console .workspace {
+  align-self: start;
   gap: 10px;
   padding: 0;
   margin-top: 16px;
@@ -721,6 +727,7 @@ button {
 .left-console .workspace-preview-btn {
   min-width: 132px;
   min-height: 40px;
+  height: 40px;
   font-size: 13px;
 }
 
@@ -768,6 +775,7 @@ button {
 }
 
 .left-console .action-panel {
+  align-self: start;
   margin-top: 14px;
   margin-bottom: 0;
   padding: 0;
@@ -778,11 +786,10 @@ button {
 }
 
 .left-console .action-stack {
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.left-console .action-stack .secondary-btn,
 .left-console .action-stack .danger-btn,
 .left-console .action-stack .ghost-btn {
   grid-column: auto;
@@ -976,13 +983,13 @@ input[readonly] {
 }
 
 .status-box {
-  min-height: 34px;
+  min-height: 30px;
   min-width: 0;
-  padding: 0 13px;
-  border: 1px solid var(--line);
+  padding: 0 11px;
+  border: 1px solid rgba(214, 222, 232, 0.9);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  color: #526071;
+  background: rgba(248, 250, 252, 0.86);
+  color: #64748b;
   font-size: 11px;
   font-weight: 760;
   line-height: 1.25;
@@ -992,6 +999,7 @@ input[readonly] {
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 .status-box::before {
@@ -1005,8 +1013,8 @@ input[readonly] {
 }
 
 .status-box.error {
-  border-color: rgba(255, 45, 85, 0.28);
-  background: rgba(255, 45, 85, 0.08);
+  border-color: rgba(239, 68, 68, 0.22);
+  background: rgba(254, 242, 242, 0.82);
   color: #b42342;
 }
 
@@ -1016,9 +1024,9 @@ input[readonly] {
 }
 
 .status-box.ok {
-  border-color: rgba(52, 199, 89, 0.28);
-  background: rgba(52, 199, 89, 0.1);
-  color: #0b6b3a;
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(240, 253, 244, 0.82);
+  color: #15803d;
 }
 
 .status-box.ok::before {
@@ -1978,8 +1986,39 @@ input[readonly] {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 8px;
   flex: 0 0 auto;
   min-width: 0;
+}
+
+.workspace-add-phase-btn {
+  min-width: 124px;
+  min-height: 40px;
+  height: 40px;
+  margin-top: 0;
+  padding: 0 14px;
+  border-radius: 10px;
+}
+
+.workspace-add-phase-btn,
+.task-detail-head .add-task {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(239, 248, 255, 0.96), rgba(220, 239, 255, 0.78));
+  border-color: rgba(0, 122, 255, 0.24);
+  color: #0057a8;
+  font-weight: 850;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.84),
+    0 8px 18px rgba(0, 87, 168, 0.08);
+}
+
+.workspace-add-phase-btn:hover,
+.task-detail-head .add-task:hover {
+  background: linear-gradient(180deg, rgba(226, 243, 255, 0.98), rgba(205, 231, 255, 0.84));
+  border-color: rgba(0, 122, 255, 0.36);
+  transform: translateY(-1px);
 }
 
 .workspace-preview-btn {
@@ -3321,13 +3360,6 @@ input[readonly] {
 .task-detail-head .add-task {
   flex: 0 0 auto;
   height: 34px;
-  background: color-mix(in srgb, var(--phase-accent, var(--blue)) 9%, #fff);
-  border-color: color-mix(in srgb, var(--phase-accent, var(--blue)) 24%, transparent);
-  color: color-mix(in srgb, var(--phase-accent, var(--blue)) 78%, #0f172a);
-}
-
-.task-detail-head .add-task:hover {
-  background: color-mix(in srgb, var(--phase-accent, var(--blue)) 15%, #fff);
 }
 
 .breakdown-btn {
@@ -3498,16 +3530,11 @@ input[readonly] {
     grid-template-columns: 1fr;
   }
 
-  .action-stack .secondary-btn,
   .action-stack .danger-btn,
   .action-stack .ghost-btn {
     grid-column: 1 / -1;
     height: 40px;
     white-space: nowrap;
-  }
-
-  .action-stack .secondary-btn {
-    min-height: 46px;
   }
 }
 
@@ -3693,7 +3720,7 @@ input[readonly] {
     padding-right: 0;
     padding-bottom: 8px;
     border-right: 0;
-    border-bottom: 1px solid rgba(45, 63, 92, 0.12);
+    border-bottom: 1px solid rgba(207, 225, 244, 0.78);
   }
 
   .io-menu-panel {
@@ -3730,10 +3757,9 @@ input[readonly] {
   }
 
   .action-stack {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .action-stack .secondary-btn,
   .action-stack .danger-btn,
   .action-stack .ghost-btn {
     grid-column: auto;

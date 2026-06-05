@@ -9,10 +9,10 @@ const defaultProject = {
       start: '2026-09-01',
       end: '2026-09-15',
       tasks: [
-        { name: '阶段1-示例任务1', start: '2026-09-01', end: '2026-09-03', status: '已完成', progress: 100 },
-        { name: '阶段1-示例任务2', start: '2026-09-04', end: '2026-09-08', status: '已完成', progress: 100 },
-        { name: '阶段1-示例任务3', start: '2026-09-09', end: '2026-09-15', status: '已完成', progress: 100 },
-        { name: '示例里程碑', start: '2026-09-15', end: '2026-09-15', status: '已完成', progress: 100, milestone: true },
+        { name: '阶段1-示例任务1', start: '2026-09-01', end: '2026-09-03', status: '未开始', progress: 0 },
+        { name: '阶段1-示例任务2', start: '2026-09-04', end: '2026-09-08', status: '未开始', progress: 0 },
+        { name: '阶段1-示例任务3', start: '2026-09-09', end: '2026-09-15', status: '未开始', progress: 0 },
+        { name: '示例里程碑', start: '2026-09-15', end: '2026-09-15', status: '未开始', progress: 0, milestone: true },
       ],
     },
     {
@@ -20,9 +20,9 @@ const defaultProject = {
       start: '2026-09-16',
       end: '2026-10-10',
       tasks: [
-        { name: '阶段2-示例任务1', start: '2026-09-16', end: '2026-09-30', status: '进行中', progress: 70 },
-        { name: '阶段2-示例任务2', start: '2026-09-16', end: '2026-09-23', status: '已完成', progress: 100 },
-        { name: '阶段2-示例任务3', start: '2026-09-20', end: '2026-09-27', status: '进行中', progress: 55 },
+        { name: '阶段2-示例任务1', start: '2026-09-16', end: '2026-09-30', status: '未开始', progress: 0 },
+        { name: '阶段2-示例任务2', start: '2026-09-16', end: '2026-09-23', status: '未开始', progress: 0 },
+        { name: '阶段2-示例任务3', start: '2026-09-20', end: '2026-09-27', status: '未开始', progress: 0 },
         { name: '阶段2-示例任务4', start: '2026-09-30', end: '2026-10-09', status: '未开始', progress: 0 },
         { name: '示例里程碑', start: '2026-10-10', end: '2026-10-10', status: '未开始', progress: 0, milestone: true },
       ],
@@ -32,7 +32,7 @@ const defaultProject = {
       start: '2026-10-11',
       end: '2026-10-30',
       tasks: [
-        { name: '阶段3-示例任务1', start: '2026-10-11', end: '2026-10-18', status: '进行中', progress: 35 },
+        { name: '阶段3-示例任务1', start: '2026-10-11', end: '2026-10-18', status: '未开始', progress: 0 },
         { name: '阶段3-示例任务2', start: '2026-10-13', end: '2026-10-22', status: '未开始', progress: 0 },
         { name: '阶段3-示例任务3', start: '2026-10-19', end: '2026-10-29', status: '未开始', progress: 0 },
         { name: '示例里程碑', start: '2026-10-30', end: '2026-10-30', status: '未开始', progress: 0, milestone: true },
@@ -296,8 +296,27 @@ function populateDependencyOptions(input, phase, taskIndex, subtask, subIndex) {
 }
 
 function syncBreakdownDerivedViews() {
+  updateBreakdownSummaryView();
   renderProjectStats();
   renderRightPane();
+}
+
+function getOpenBreakdownTask() {
+  const { phaseIndex, taskIndex } = breakdownOpen;
+  if (!Number.isInteger(phaseIndex) || !Number.isInteger(taskIndex)) return null;
+  return state.phases[phaseIndex]?.tasks[taskIndex] || null;
+}
+
+function updateBreakdownSummaryView() {
+  const task = getOpenBreakdownTask();
+  const panel = document.querySelector('.inline-breakdown-panel');
+  if (!task || !panel) return;
+  const subtasks = Array.isArray(task.subtasks) ? task.subtasks : [];
+  const progress = getTaskBreakdownProgress(task);
+  const countValue = panel.querySelector('[data-breakdown-meta="subtask-count"] strong');
+  const progressValue = panel.querySelector('[data-breakdown-meta="progress"] strong');
+  if (countValue) countValue.textContent = `${subtasks.length}项`;
+  if (progressValue) progressValue.textContent = progress === null ? '未拆解' : `${progress}%`;
 }
 
 function bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex) {
@@ -356,8 +375,9 @@ function bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex) {
   });
 }
 
-function makeBreakdownMeta(label, value) {
+function makeBreakdownMeta(label, value, key = '') {
   const item = makeElement('span', 'inline-breakdown-meta');
+  if (key) item.dataset.breakdownMeta = key;
   item.append(makeElement('strong', '', value), makeElement('small', '', label));
   return item;
 }
@@ -378,8 +398,8 @@ function renderBreakdownPanel(phaseIndex, taskIndex) {
   summaryMeta.append(
     makeBreakdownMeta('父任务区间', task.start && task.end ? `${fmtMd(task.start)}-${fmtMd(task.end)}` : '-'),
     makeBreakdownMeta('计划用时', task.start && task.end ? `${daysInclusiveIso(task.start, task.end)}天` : '-'),
-    makeBreakdownMeta('子任务', `${task.subtasks.length}项`),
-    makeBreakdownMeta('完成度', progress === null ? '未拆解' : `${progress}%`),
+    makeBreakdownMeta('子任务', `${task.subtasks.length}项`, 'subtask-count'),
+    makeBreakdownMeta('完成度', progress === null ? '未拆解' : `${progress}%`, 'progress'),
   );
   summary.append(summaryMeta);
 
