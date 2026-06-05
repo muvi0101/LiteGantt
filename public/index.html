@@ -174,14 +174,6 @@
           <span>子任务名称</span>
           <input data-field="name" type="text" />
         </label>
-        <label class="bd-field bd-priority-field">
-          <span>优先级</span>
-          <select class="custom-select" data-field="priority">
-            <option value="高">高</option>
-            <option value="中" selected>中</option>
-            <option value="低">低</option>
-          </select>
-        </label>
         <label class="bd-field bd-start-field">
           <span>开始日期</span>
           <input data-field="start" type="date" />
@@ -189,16 +181,6 @@
         <label class="bd-field bd-end-field">
           <span>结束日期</span>
           <input data-field="end" type="date" />
-        </label>
-        <label class="bd-field bd-status-field">
-          <span>完成状态</span>
-          <select class="custom-select" data-field="status">
-            <option value="未开始">未开始</option>
-            <option value="进行中">进行中</option>
-            <option value="已完成">已完成</option>
-            <option value="已暂停">已暂停</option>
-            <option value="已取消">已取消</option>
-          </select>
         </label>
         <label class="bd-field bd-client-field">
           <span>客户负责人</span>
@@ -211,6 +193,24 @@
         <label class="bd-field bd-deps-field">
           <span>前置依赖</span>
           <select data-field="deps"></select>
+        </label>
+        <label class="bd-field bd-priority-field">
+          <span>优先级</span>
+          <select class="custom-select" data-field="priority">
+            <option value="高">高</option>
+            <option value="中" selected>中</option>
+            <option value="低">低</option>
+          </select>
+        </label>
+        <label class="bd-field bd-status-field">
+          <span>完成状态</span>
+          <select class="custom-select" data-field="status">
+            <option value="未开始">未开始</option>
+            <option value="进行中">进行中</option>
+            <option value="已完成">已完成</option>
+            <option value="已暂停">已暂停</option>
+            <option value="已取消">已取消</option>
+          </select>
         </label>
         <button class="icon-btn delete-subtask" type="button" aria-label="删除子任务">×</button>
       </div>
