@@ -79,7 +79,6 @@ const statusDefaultProgress = {
   已完成: 100,
   延期: 40,
 };
-const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
 const PREVIEW_MONTH_WIDTH = 126;
@@ -780,6 +779,47 @@ function sortTasksByStart(phase) {
   phase.tasks.sort((a, b) => {
     return dateSortValue(a.start) - dateSortValue(b.start);
   });
+}
+
+function isPhaseReadyForSort(phase) {
+  return isIsoDate(phase.start) && isIsoDate(phase.end);
+}
+
+function remapPhaseIndexes(previousPhases) {
+  const nextIndexByPhase = new Map(state.phases.map((phase, index) => [phase, index]));
+  expandedPhaseIndexes = new Set([...expandedPhaseIndexes]
+    .map((index) => nextIndexByPhase.get(previousPhases[index]))
+    .filter((index) => Number.isInteger(index)));
+
+  if (Number.isInteger(focusedPhaseIndex)) {
+    const nextFocusedIndex = nextIndexByPhase.get(previousPhases[focusedPhaseIndex]);
+    focusedPhaseIndex = Number.isInteger(nextFocusedIndex) ? nextFocusedIndex : null;
+  }
+
+  if (Number.isInteger(breakdownOpen.phaseIndex)) {
+    const nextBreakdownPhaseIndex = nextIndexByPhase.get(previousPhases[breakdownOpen.phaseIndex]);
+    breakdownOpen = Number.isInteger(nextBreakdownPhaseIndex)
+      ? { ...breakdownOpen, phaseIndex: nextBreakdownPhaseIndex }
+      : { phaseIndex: -1, taskIndex: -1 };
+  }
+}
+
+function sortPhasesByStart() {
+  const previousPhases = [...state.phases];
+  const previousIndexByPhase = new Map(previousPhases.map((phase, index) => [phase, index]));
+  state.phases.sort((a, b) => {
+    const aReady = isPhaseReadyForSort(a);
+    const bReady = isPhaseReadyForSort(b);
+    if (aReady && !bReady) return 1;
+    if (!aReady && bReady) return -1;
+    if (!aReady && !bReady) {
+      return previousIndexByPhase.get(a) - previousIndexByPhase.get(b);
+    }
+    return dateSortValue(a.start) - dateSortValue(b.start)
+      || dateSortValue(a.end) - dateSortValue(b.end)
+      || previousIndexByPhase.get(a) - previousIndexByPhase.get(b);
+  });
+  remapPhaseIndexes(previousPhases);
 }
 
 function normalizeTaskStatus(status) {
@@ -1756,15 +1796,6 @@ function getLatestPhaseEnd() {
   }, '');
 }
 
-function getNewPhaseDates() {
-  const latestEnd = getLatestPhaseEnd();
-  const start = isIsoDate(latestEnd) ? addDaysIso(latestEnd, 1) : '2026-09-01';
-  return {
-    start,
-    end: addDaysIso(start, DEFAULT_PHASE_DAYS),
-  };
-}
-
 function syncProjectStart() {
   state.projectStart = getEarliestPhaseStart();
 }
@@ -1918,6 +1949,9 @@ function render() {
         input.addEventListener('change', () => {
           phase[field] = input.value;
           normalizeTaskDates(phase);
+          if (isPhaseReadyForSort(phase)) {
+            sortPhasesByStart();
+          }
           render();
         });
       } else {
@@ -2250,16 +2284,15 @@ function toggleIoMenu() {
 }
 
 document.querySelector('#addPhaseBtn').addEventListener('click', () => {
-  const { start, end } = getNewPhaseDates();
   expandedPhaseIndexes.clear();
   breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
-  state.phases.push({
+  state.phases.unshift({
     name: '新阶段',
-    start,
-    end,
-    tasks: [{ name: '新任务', start, end, status: '未开始', progress: 0, milestone: false }],
+    start: '',
+    end: '',
+    tasks: [{ name: '新任务', start: '', end: '', status: '未开始', progress: 0, milestone: false }],
   });
-  focusPhase(state.phases.length - 1);
+  focusPhase(0);
 });
 
 if (clearBtn) clearBtn.addEventListener('click', () => {
