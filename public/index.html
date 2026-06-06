@@ -12,42 +12,44 @@
   <body>
     <div class="code-fingerprint" aria-hidden="true" hidden data-author="Caius" data-project="Project Gantt Builder" data-fingerprint="CGFB-2026-N7Q4-X1K8" data-rights="ORIGINAL-WORK|INTERNAL-USE-ONLY"></div>
     <header class="topbar">
-      <div class="brand-block">
-        <div class="brand-kicker">
-          <span class="brand-dot"></span>
-          <span>Delivery Plan Control</span>
-        </div>
-        <h1>计划即刻成图，交付尽在掌握</h1>
-        <p>实时预览 · 任务拆解 · 里程碑管理</p>
-        <div class="brand-track" aria-hidden="true">
-          <i></i>
-          <i></i>
-          <i></i>
-        </div>
-      </div>
-      <div class="top-actions" aria-label="输出操作">
-        <div class="version-action-group" aria-label="版本控制">
-          <button id="saveVersionBtn" class="version-save-btn" type="button">
-            <span>保存版本</span>
-          </button>
-          <button id="versionHistoryBtn" class="version-history-btn" type="button">
-            <span>历史版本</span>
-          </button>
-        </div>
-        <div class="io-menu" aria-label="数据导入导出">
-          <button id="ioMenuBtn" class="io-menu-btn" type="button" aria-expanded="false" aria-controls="ioMenuPanel">
-            <span class="io-menu-icon" aria-hidden="true"></span>
-            <span>导入/导出</span>
-            <span class="io-menu-caret" aria-hidden="true">▼</span>
-          </button>
-          <div id="ioMenuPanel" class="io-menu-panel" role="menu">
-            <button id="importExcelBtn" class="io-menu-item" type="button" role="menuitem">导入 Excel</button>
-            <button id="exportExcelBtn" class="io-menu-item" type="button" role="menuitem">导出 Excel</button>
-            <button id="exportImageBtn" class="io-menu-item" type="button" role="menuitem">导出图片</button>
+      <div class="topbar-inner">
+        <div class="brand-block">
+          <div class="brand-kicker">
+            <span class="brand-dot"></span>
+            <span>Delivery Plan Control</span>
+          </div>
+          <h1>计划即刻成图，交付尽在掌握</h1>
+          <p>实时预览 · 任务拆解 · 里程碑管理</p>
+          <div class="brand-track" aria-hidden="true">
+            <i></i>
+            <i></i>
+            <i></i>
           </div>
         </div>
-        <input id="importExcelInput" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-        <div id="statusBox" class="status-box">待生成</div>
+
+        <div class="top-actions" aria-label="输出操作">
+          <div class="version-action-group" aria-label="版本控制">
+            <button id="saveVersionBtn" class="version-save-btn" type="button">
+              <span>保存版本</span>
+            </button>
+            <button id="versionHistoryBtn" class="version-history-btn" type="button">
+              <span>历史版本</span>
+            </button>
+          </div>
+          <div class="io-menu" aria-label="数据导入导出">
+            <button id="ioMenuBtn" class="io-menu-btn" type="button" aria-expanded="false" aria-controls="ioMenuPanel">
+              <span class="io-menu-icon" aria-hidden="true"></span>
+              <span>导入/导出</span>
+              <span class="io-menu-caret" aria-hidden="true">▼</span>
+            </button>
+            <div id="ioMenuPanel" class="io-menu-panel" role="menu">
+              <button id="importExcelBtn" class="io-menu-item" type="button" role="menuitem">导入 Excel</button>
+              <button id="exportExcelBtn" class="io-menu-item" type="button" role="menuitem">导出 Excel</button>
+              <button id="exportImageBtn" class="io-menu-item" type="button" role="menuitem">导出图片</button>
+            </div>
+          </div>
+          <input id="importExcelInput" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+        </div>
       </div>
     </header>
 
@@ -61,16 +63,18 @@
               <p>从阶段开始组织计划，展开后维护任务明细与里程碑。</p>
             </div>
 
-            <div class="command-badges" aria-label="计划规则">
-              <span>自动取最早阶段日期</span>
-              <span>周视图实时联动</span>
-            </div>
-          </div>
-
-          <div class="command-section action-panel" aria-label="阶段操作">
-            <div class="action-stack">
-              <button id="clearBtn" class="danger-btn" type="button">一键清空</button>
-              <button id="resetBtn" class="ghost-btn" type="button">恢复示例</button>
+            <div class="console-tools" aria-label="阶段操作与初始化">
+              <button id="addPhaseBtn" class="secondary-btn workspace-add-phase-btn" type="button">+ 添加阶段</button>
+              <div class="init-menu">
+                <button id="initMenuBtn" class="init-menu-btn" type="button" aria-expanded="false" aria-controls="initMenuPanel">
+                  <span>初始化</span>
+                  <small aria-hidden="true">▼</small>
+                </button>
+                <div id="initMenuPanel" class="init-menu-panel" role="menu">
+                  <button id="resetBtn" class="init-menu-item" type="button" role="menuitem">恢复示例</button>
+                  <button id="clearBtn" class="init-menu-item danger" type="button" role="menuitem">清空当前计划</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -80,13 +84,26 @@
                 <span class="eyebrow">Delivery Stages</span>
                 <h2>阶段列表</h2>
               </div>
-              <div class="workspace-head-actions">
-                <button id="addPhaseBtn" class="secondary-btn workspace-add-phase-btn" type="button">+ 添加阶段</button>
+              <div class="stage-list-actions" aria-label="甘特图操作">
+                <div class="timeline-unit-control" aria-label="甘特图生成单位">
+                  <span class="timeline-unit-label">甘特粒度</span>
+                  <div class="timeline-unit-options" role="group" aria-label="选择甘特图最小单位">
+                    <button class="timeline-unit-option active" type="button" data-gantt-unit="week" aria-pressed="true">
+                      <span>周</span>
+                      <small>执行跟踪</small>
+                    </button>
+                    <button class="timeline-unit-option" type="button" data-gantt-unit="month" aria-pressed="false">
+                      <span>月</span>
+                      <small>管理汇报</small>
+                    </button>
+                  </div>
+                </div>
                 <button id="previewGanttBtn" class="preview-btn workspace-preview-btn" type="button">
                   <span>预览甘特图</span>
                 </button>
               </div>
             </div>
+
             <div id="phaseList" class="phase-list"></div>
           </section>
         </section>

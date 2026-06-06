@@ -82,6 +82,7 @@ const statusDefaultProgress = {
 const DEFAULT_PHASE_DAYS = 14;
 const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
+const PREVIEW_MONTH_WIDTH = 126;
 const PREVIEW_MAX_WEEKS = 104;
 const PREVIEW_MILESTONE_MARKER_WIDTH = 10;
 const PREVIEW_MILESTONE_STAR_WIDTH = 16;
@@ -109,9 +110,13 @@ const previewCanvas = ganttModal ? ganttModal.querySelector('#previewCanvas') : 
 const ganttPreview = ganttModal ? ganttModal.querySelector('#ganttPreview') : null;
 const projectStats = document.querySelector('#projectStats');
 const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
-const statusBox = document.querySelector('#statusBox');
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
+const clearBtn = document.querySelector('#clearBtn');
+const resetBtn = document.querySelector('#resetBtn');
+const initMenu = document.querySelector('.init-menu');
+const initMenuBtn = document.querySelector('#initMenuBtn');
+const initMenuPanel = document.querySelector('#initMenuPanel');
 const saveVersionBtn = document.querySelector('#saveVersionBtn');
 const versionHistoryBtn = document.querySelector('#versionHistoryBtn');
 const versionHistoryBackdrop = document.querySelector('#versionHistoryBackdrop');
@@ -130,6 +135,7 @@ const importExcelInput = document.querySelector('#importExcelInput');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
 const exportImageBtn = document.querySelector('#exportImageBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
+const timelineUnitButtons = document.querySelectorAll('[data-gantt-unit]');
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
 const zoomInBtn = ganttModal ? ganttModal.querySelector('#zoomInBtn') : null;
@@ -139,6 +145,7 @@ const zoomValue = ganttModal ? ganttModal.querySelector('#zoomValue') : null;
 let previewZoomMode = 'fit';
 let manualPreviewZoom = 1;
 let currentPreviewZoom = 1;
+let selectedTimelineUnit = 'week';
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
@@ -545,9 +552,48 @@ function registerCodeFingerprint() {
   );
 }
 
-function setStatus(message, type = '') {
-  statusBox.textContent = message;
-  statusBox.className = `status-box ${type}`.trim();
+function setStatus() {}
+
+function normalizeTimelineUnit(unit) {
+  return unit === 'month' ? 'month' : 'week';
+}
+
+function timelineUnitLabel(unit = selectedTimelineUnit) {
+  return normalizeTimelineUnit(unit) === 'month' ? '月视图' : '周视图';
+}
+
+function updateTimelineUnitControls() {
+  const unit = normalizeTimelineUnit(selectedTimelineUnit);
+  timelineUnitButtons.forEach((button) => {
+    const active = normalizeTimelineUnit(button.dataset.ganttUnit) === unit;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+  if (previewGanttBtn) {
+    const label = previewGanttBtn.querySelector('span') || previewGanttBtn;
+    label.textContent = '预览甘特图';
+  }
+  document.body.dataset.ganttUnit = unit;
+}
+
+function setTimelineUnit(unit, announce = false) {
+  selectedTimelineUnit = normalizeTimelineUnit(unit);
+  updateTimelineUnitControls();
+  if (ganttModal?.classList.contains('open')) renderRightPane();
+  if (announce) {
+    setStatus(`已切换为${timelineUnitLabel()}预览。`, 'ok');
+  }
+}
+
+function closeInitMenu() {
+  initMenu?.classList.remove('open');
+  initMenuBtn?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleInitMenu() {
+  if (!initMenu || !initMenuBtn) return;
+  const isOpen = initMenu.classList.toggle('open');
+  initMenuBtn.setAttribute('aria-expanded', String(isOpen));
 }
 
 function apiUrl(path) {
@@ -879,6 +925,78 @@ function getMonthBands(projectStartValue, totalWeeks) {
       activeBand.toWeek = weekIndex;
     }
   }
+  return bands;
+}
+
+function getMonthStartIso(value) {
+  if (!isIsoDate(value)) return '';
+  return `${value.slice(0, 7)}-01`;
+}
+
+function addMonthsIso(value, months) {
+  if (!isIsoDate(value)) return value || '';
+  const [year, month] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(year, month - 1 + months, 1));
+  return date.toISOString().slice(0, 10);
+}
+
+function getMonthEndIso(value) {
+  const monthStart = getMonthStartIso(value);
+  return monthStart ? addDaysIso(addMonthsIso(monthStart, 1), -1) : '';
+}
+
+function monthShortLabel(value) {
+  if (!isIsoDate(value)) return '';
+  return `${Number(value.slice(5, 7))}月`;
+}
+
+function buildPreviewMonthColumns(projectStartValue, projectEndValue) {
+  const columns = [];
+  let cursor = getMonthStartIso(projectStartValue);
+  const endMonth = getMonthStartIso(projectEndValue);
+  if (!cursor || !endMonth) return columns;
+
+  while (compareIsoDates(cursor, endMonth) <= 0 && columns.length < 48) {
+    const end = getMonthEndIso(cursor);
+    columns.push({
+      monthIndex: columns.length + 1,
+      start: cursor,
+      end,
+      label: monthShortLabel(cursor),
+      yearLabel: `${cursor.slice(0, 4)}年`,
+      days: daysInclusiveIso(cursor, end),
+    });
+    cursor = addMonthsIso(cursor, 1);
+  }
+
+  while (columns.length < 4) {
+    const last = columns[columns.length - 1];
+    const nextStart = last ? addMonthsIso(last.start, 1) : getMonthStartIso(projectStartValue);
+    const nextEnd = getMonthEndIso(nextStart);
+    columns.push({
+      monthIndex: columns.length + 1,
+      start: nextStart,
+      end: nextEnd,
+      label: monthShortLabel(nextStart),
+      yearLabel: `${nextStart.slice(0, 4)}年`,
+      days: daysInclusiveIso(nextStart, nextEnd),
+    });
+  }
+
+  return columns;
+}
+
+function getYearBands(monthColumns) {
+  const bands = [];
+  let activeBand = null;
+  monthColumns.forEach((column) => {
+    if (!activeBand || activeBand.label !== column.yearLabel) {
+      activeBand = { label: column.yearLabel, fromMonth: column.monthIndex, toMonth: column.monthIndex };
+      bands.push(activeBand);
+    } else {
+      activeBand.toMonth = column.monthIndex;
+    }
+  });
   return bands;
 }
 
@@ -1455,26 +1573,66 @@ function renderRightPane() {
   renderPreview();
 }
 
-function durationText(item) {
+function durationText(item, unit = selectedTimelineUnit) {
   const days = daysInclusiveIso(item.start, item.end);
   if (!days) return '';
+  if (item.kind === 'phase' && normalizeTimelineUnit(unit) === 'month') {
+    return `${Math.max(1, Math.ceil(days / 30))}月（${fmtMd(item.start)}-${fmtMd(item.end)}）`;
+  }
   return item.kind === 'phase'
     ? `${Math.ceil(days / 7)}周（${fmtMd(item.start)}-${fmtMd(item.end)}）`
     : `${days}天（${fmtMd(item.start)}-${fmtMd(item.end)}）`;
 }
 
-function renderPreviewBar(track, item, projectStartValue) {
+function getMonthTimelinePx(value, monthColumns, includeEnd = false) {
+  if (!isIsoDate(value) || !monthColumns.length) return 0;
+  const firstStart = monthColumns[0].start;
+  const last = monthColumns[monthColumns.length - 1];
+  if (compareIsoDates(value, firstStart) < 0) return 0;
+  if (compareIsoDates(value, last.end) > 0) return monthColumns.length * PREVIEW_MONTH_WIDTH;
+
+  const targetMonth = getMonthStartIso(value);
+  const monthIndex = monthColumns.findIndex((column) => column.start === targetMonth);
+  if (monthIndex < 0) return monthColumns.length * PREVIEW_MONTH_WIDTH;
+  const column = monthColumns[monthIndex];
+  const day = Number(value.slice(8, 10));
+  const dayOffset = Math.min(column.days, Math.max(0, day - 1 + (includeEnd ? 1 : 0)));
+  return monthIndex * PREVIEW_MONTH_WIDTH + (dayOffset * PREVIEW_MONTH_WIDTH) / column.days;
+}
+
+function getPreviewBarMetrics(item, timeline) {
   if (!isIsoDate(item.start) || !isIsoDate(item.end)) return;
-  const dayOffset = getPreviewDayOffset(item.start, projectStartValue);
   const durationDays = daysInclusiveIso(item.start, item.end);
-  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, projectStartValue) : null;
   const drawAsMilestonePoint = item.kind === 'sub' && item.milestone && durationDays === 1;
+
+  if (timeline.unit === 'month') {
+    const startPx = getMonthTimelinePx(item.start, timeline.monthColumns, false);
+    const endPx = getMonthTimelinePx(item.end, timeline.monthColumns, true);
+    const pointPx = getMonthTimelinePx(item.end, timeline.monthColumns, true);
+    const barWidthPx = drawAsMilestonePoint ? PREVIEW_MILESTONE_MARKER_WIDTH : Math.max(6, endPx - startPx);
+    return {
+      leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : startPx,
+      barWidthPx,
+      pointPx,
+    };
+  }
+
+  const dayOffset = getPreviewDayOffset(item.start, timeline.projectStartValue);
+  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, timeline.projectStartValue) : null;
   const barWidthPx = drawAsMilestonePoint
     ? PREVIEW_MILESTONE_MARKER_WIDTH
     : getPreviewDurationPx(dayOffset, durationDays);
-  const leftPx = drawAsMilestonePoint
-    ? pointPx - barWidthPx
-    : getPreviewTimelinePx(dayOffset);
+  return {
+    leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : getPreviewTimelinePx(dayOffset),
+    barWidthPx,
+    pointPx,
+  };
+}
+
+function renderPreviewBar(track, item, timeline) {
+  const metrics = getPreviewBarMetrics(item, timeline);
+  if (!metrics) return;
+  const { leftPx, barWidthPx, pointPx } = metrics;
   const color = phaseAccents[item.phaseIndex % phaseAccents.length];
 
   const shell = document.createElement('span');
@@ -1512,33 +1670,58 @@ function renderPreview() {
   const range = getPreviewRange();
   if (!ganttPreview) return;
   ganttPreview.textContent = '';
+  ganttPreview.dataset.timelineUnit = normalizeTimelineUnit(selectedTimelineUnit);
   if (!range) {
     ganttPreview.append(makePreviewCell('preview-empty', '请先录入项目阶段日期。'));
     return;
   }
 
-  const { projectStartValue, totalWeeks } = range;
+  const unit = normalizeTimelineUnit(selectedTimelineUnit);
+  const { projectStartValue, projectEndValue, totalWeeks } = range;
   const rows = getPreviewRows();
-  ganttPreview.style.gridTemplateColumns = `250px 160px repeat(${totalWeeks}, ${PREVIEW_WEEK_WIDTH}px)`;
+  const monthColumns = unit === 'month' ? buildPreviewMonthColumns(projectStartValue, projectEndValue) : [];
+  const timelineColumns = unit === 'month' ? monthColumns.length : totalWeeks;
+  const timelineWidth = unit === 'month' ? PREVIEW_MONTH_WIDTH : PREVIEW_WEEK_WIDTH;
+  const timeline = { unit, projectStartValue, monthColumns };
+
+  ganttPreview.style.setProperty('--week-width', `${timelineWidth}px`);
+  ganttPreview.style.gridTemplateColumns = `250px 160px repeat(${timelineColumns}, ${timelineWidth}px)`;
 
   ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '1 / 4'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '1 / 4'));
 
-  getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
-    ganttPreview.append(makePreviewCell(
-      'preview-month',
-      band.label,
-      `${band.fromWeek + 2} / span ${band.toWeek - band.fromWeek + 1}`,
-      '1',
-    ));
-  });
+  if (unit === 'month') {
+    getYearBands(monthColumns).forEach((band) => {
+      ganttPreview.append(makePreviewCell(
+        'preview-month preview-year-band',
+        band.label,
+        `${band.fromMonth + 2} / span ${band.toMonth - band.fromMonth + 1}`,
+        '1',
+      ));
+    });
 
-  for (let weekIndex = 1; weekIndex <= totalWeeks; weekIndex += 1) {
-    const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
-    const weekEnd = addDaysIso(weekStart, 6);
-    const gridColumn = `${weekIndex + 2}`;
-    ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '2'));
-    ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '3'));
+    monthColumns.forEach((column) => {
+      const gridColumn = `${column.monthIndex + 2}`;
+      ganttPreview.append(makePreviewCell('preview-week preview-month-unit', column.label, gridColumn, '2'));
+      ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(column.start)}-${fmtMd(column.end)}`, gridColumn, '3'));
+    });
+  } else {
+    getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
+      ganttPreview.append(makePreviewCell(
+        'preview-month',
+        band.label,
+        `${band.fromWeek + 2} / span ${band.toWeek - band.fromWeek + 1}`,
+        '1',
+      ));
+    });
+
+    for (let weekIndex = 1; weekIndex <= totalWeeks; weekIndex += 1) {
+      const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
+      const weekEnd = addDaysIso(weekStart, 6);
+      const gridColumn = `${weekIndex + 2}`;
+      ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '2'));
+      ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '3'));
+    }
   }
 
   rows.forEach((item, index) => {
@@ -1549,12 +1732,12 @@ function renderPreview() {
     const focusClass = isPhase && focusedPhaseIndex === item.phaseIndex ? ' preview-row-focused' : '';
     const displayName = isPhase ? item.name : `· ${item.name}`;
     const nameCell = makePreviewCell(`preview-name${rowClass}${focusClass}`, displayName, '1', gridRow);
-    const durationCell = makePreviewCell(`preview-duration${rowClass}${focusClass}`, durationText(item), '2', gridRow);
-    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `3 / span ${totalWeeks}`, gridRow);
+    const durationCell = makePreviewCell(`preview-duration${rowClass}${focusClass}`, durationText(item, unit), '2', gridRow);
+    const track = makePreviewCell(`preview-track${rowClass}${focusClass}`, '', `3 / span ${timelineColumns}`, gridRow);
     nameCell.style.setProperty('--phase-accent', color);
     durationCell.style.setProperty('--phase-accent', color);
     track.style.setProperty('--phase-accent', color);
-    renderPreviewBar(track, item, projectStartValue);
+    renderPreviewBar(track, item, timeline);
     ganttPreview.append(nameCell, durationCell, track);
   });
   schedulePreviewZoom();
@@ -2068,6 +2251,8 @@ function toggleIoMenu() {
 
 document.querySelector('#addPhaseBtn').addEventListener('click', () => {
   const { start, end } = getNewPhaseDates();
+  expandedPhaseIndexes.clear();
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
   state.phases.push({
     name: '新阶段',
     start,
@@ -2077,7 +2262,8 @@ document.querySelector('#addPhaseBtn').addEventListener('click', () => {
   focusPhase(state.phases.length - 1);
 });
 
-document.querySelector('#clearBtn').addEventListener('click', () => {
+if (clearBtn) clearBtn.addEventListener('click', () => {
+  closeInitMenu();
   state = {
     title: state.title || defaultProject.title,
     projectStart: '',
@@ -2092,7 +2278,8 @@ document.querySelector('#clearBtn').addEventListener('click', () => {
   setStatus('已清空计划，可重新添加阶段。', 'ok');
 });
 
-document.querySelector('#resetBtn').addEventListener('click', () => {
+if (resetBtn) resetBtn.addEventListener('click', () => {
+  closeInitMenu();
   state = structuredClone(defaultProject);
   focusedPhaseIndex = null;
   if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
@@ -2100,6 +2287,17 @@ document.querySelector('#resetBtn').addEventListener('click', () => {
   expandedPhaseIndexes.clear();
   render();
   setStatus('已恢复示例数据。');
+});
+
+if (initMenuBtn) initMenuBtn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  toggleInitMenu();
+});
+if (initMenuPanel) initMenuPanel.addEventListener('click', (event) => event.stopPropagation());
+document.addEventListener('click', (event) => {
+  if (!initMenu?.classList.contains('open')) return;
+  if (event.target instanceof Node && initMenu.contains(event.target)) return;
+  closeInitMenu();
 });
 
 if (ioMenuBtn) ioMenuBtn.addEventListener('click', (event) => {
@@ -2148,6 +2346,11 @@ function closeGanttModal() {
   ganttModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('gantt-modal-visible');
 }
+timelineUnitButtons.forEach((button) => {
+  button.addEventListener('click', () => setTimelineUnit(button.dataset.ganttUnit, true));
+});
+updateTimelineUnitControls();
+
 if (previewGanttBtn) previewGanttBtn.addEventListener('click', openGanttModal);
 if (ganttModal) {
   const modalCloseBtn = ganttModal.querySelector('.gantt-modal-close');
@@ -2158,7 +2361,8 @@ if (ganttModal) {
 // ESC key closes modal
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
+    if (initMenu && initMenu.classList.contains('open')) closeInitMenu();
+    else if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
     else if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
     else if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
     else if (isBreakdownTargetValid()) closeBreakdown();
