@@ -105,6 +105,7 @@ const introScreen = document.querySelector('#introScreen');
 const appShell = document.querySelector('#appShell');
 const enterAppBtn = document.querySelector('#enterAppBtn');
 const introSubtitleText = document.querySelector('#introSubtitleText');
+const introFlowStepItems = document.querySelectorAll('[data-intro-flow-step]');
 const introStepCaption = document.querySelector('#introStepCaption');
 const introDemoStepButtons = document.querySelectorAll('[data-intro-step]');
 const phaseList = document.querySelector('#phaseList');
@@ -220,6 +221,9 @@ function setIntroSubtitle(nextIndex) {
   if (!introSubtitleText) return;
   introSubtitleIndex = ((Number(nextIndex) % introSubtitlePhrases.length) + introSubtitlePhrases.length) % introSubtitlePhrases.length;
   const phrase = introSubtitlePhrases[introSubtitleIndex];
+  introFlowStepItems.forEach((item) => {
+    item.classList.toggle('active', Number(item.dataset.introFlowStep) === introSubtitleIndex);
+  });
   if (prefersReducedMotion()) {
     introSubtitleText.textContent = phrase;
     return;

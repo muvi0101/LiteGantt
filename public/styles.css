@@ -191,9 +191,10 @@ body.intro-leaving .demo-health-card strong em {
 .intro-copy {
   grid-area: copy;
   display: grid;
-  align-content: center;
+  align-content: start;
   justify-items: start;
   min-width: 0;
+  padding-top: clamp(28px, 5vh, 58px);
   padding-right: clamp(0px, 1vw, 16px);
 }
 
@@ -330,15 +331,86 @@ body.intro-leaving .demo-health-card strong em {
   animation: intro-subtitle-progress 3s ease-in-out infinite;
 }
 
+.intro-flow-rail {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  width: min(520px, 100%);
+  margin-top: 12px;
+}
+
+.intro-flow-rail span {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 10px 11px;
+  overflow: hidden;
+  border: 1px solid rgba(207, 225, 244, 0.86);
+  border-radius: 16px;
+  color: #526071;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 18px rgba(15, 59, 94, 0.045);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.intro-flow-rail span::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  left: 10px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan), var(--green));
+  opacity: 0;
+  transform: scaleX(0.35);
+  transform-origin: left center;
+  transition:
+    opacity 0.2s ease,
+    transform 0.24s ease;
+}
+
+.intro-flow-rail b {
+  color: #0a64c7;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.intro-flow-rail em {
+  color: inherit;
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.intro-flow-rail span.active {
+  border-color: rgba(10, 132, 255, 0.4);
+  color: #0b4f98;
+  background: linear-gradient(180deg, rgba(239, 247, 255, 0.96), rgba(255, 255, 255, 0.86));
+  box-shadow: 0 12px 24px rgba(15, 59, 94, 0.08);
+}
+
+.intro-flow-rail span.active::after {
+  opacity: 0.9;
+  transform: scaleX(1);
+}
+
 .intro-actions {
   width: min(420px, 100%);
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .intro-launch-panel {
   display: grid;
   gap: 10px;
-  width: 100%;
+  width: min(468px, 100%);
   padding: 12px;
   border: 1px solid rgba(162, 201, 242, 0.82);
   border-radius: 20px;
@@ -351,9 +423,20 @@ body.intro-leaving .demo-health-card strong em {
 }
 
 .intro-launch-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   color: #526071;
   font-size: 12px;
   font-weight: 900;
+}
+
+.intro-launch-label i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #34c759;
+  box-shadow: 0 0 0 5px rgba(52, 199, 89, 0.14);
 }
 
 .intro-enter-btn {
@@ -564,12 +647,16 @@ body.intro-leaving .demo-health-card strong em {
 }
 
 .intro-demo-steps button {
+  position: relative;
   display: grid;
   grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
   align-items: center;
+  align-content: center;
   gap: 9px;
-  min-height: 48px;
-  padding: 0 12px;
+  min-height: 82px;
+  padding: 13px 14px 18px;
+  overflow: hidden;
   border: 1px solid rgba(207, 225, 244, 0.9);
   border-radius: 14px;
   color: #4d6078;
@@ -580,6 +667,23 @@ body.intro-leaving .demo-health-card strong em {
     background 0.2s ease,
     transform 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.intro-demo-steps button::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: 10px;
+  left: 14px;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan), var(--green));
+  opacity: 0;
+  transform: scaleX(0.22);
+  transform-origin: left center;
+  transition:
+    opacity 0.2s ease,
+    transform 0.24s ease;
 }
 
 .intro-demo-steps button span {
@@ -600,12 +704,26 @@ body.intro-leaving .demo-health-card strong em {
   font-weight: 900;
 }
 
+.intro-demo-steps button small {
+  grid-column: 2;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
 .intro-demo-steps button.active {
   transform: translateY(-1px);
   border-color: rgba(0, 122, 255, 0.38);
   color: #0b4f98;
   background: linear-gradient(180deg, rgba(239, 247, 255, 0.96), rgba(255, 255, 255, 0.86));
   box-shadow: 0 10px 24px rgba(15, 59, 94, 0.1);
+}
+
+.intro-demo-steps button.active::after {
+  opacity: 0.86;
+  transform: scaleX(1);
 }
 
 .intro-demo-steps button.active span {
@@ -916,13 +1034,16 @@ body.intro-leaving .demo-health-card strong em {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-auto-rows: minmax(112px, 1fr);
   gap: 12px;
-  align-self: end;
+  align-self: start;
   min-width: 0;
 }
 
 .intro-feature-strip article {
   display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto auto;
   align-content: start;
+  gap: 3px 10px;
   min-width: 0;
   min-height: 112px;
   padding: 15px;
@@ -945,6 +1066,7 @@ body.intro-leaving .demo-health-card strong em {
 .intro-feature-strip span {
   display: inline-flex;
   align-items: center;
+  grid-column: 1;
   min-height: 18px;
   color: #0a64c7;
   font-size: 10px;
@@ -952,8 +1074,31 @@ body.intro-leaving .demo-health-card strong em {
   letter-spacing: 0.04em;
 }
 
+.feature-mark {
+  grid-column: 2;
+  justify-self: end;
+  width: 28px;
+  height: 18px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(10, 132, 255, 0.18), rgba(50, 173, 230, 0.64));
+  box-shadow: inset 0 0 0 1px rgba(10, 132, 255, 0.16);
+}
+
+.feature-task {
+  background: linear-gradient(90deg, rgba(19, 168, 200, 0.2), rgba(52, 199, 89, 0.6));
+}
+
+.feature-preview {
+  background: linear-gradient(90deg, rgba(52, 199, 89, 0.2), rgba(255, 159, 10, 0.62));
+}
+
+.feature-data {
+  background: linear-gradient(90deg, rgba(10, 132, 255, 0.2), rgba(95, 109, 241, 0.62));
+}
+
 .intro-feature-strip strong {
   display: block;
+  grid-column: 1 / -1;
   margin-top: 5px;
   color: var(--deep);
   font-size: 15px;
@@ -961,6 +1106,7 @@ body.intro-leaving .demo-health-card strong em {
 }
 
 .intro-feature-strip p {
+  grid-column: 1 / -1;
   margin: 7px 0 0;
   color: #5b6b7f;
   font-size: 12px;
@@ -3825,16 +3971,17 @@ input[readonly] {
 .plan-console .health-panel {
   position: sticky;
   top: 148px;
-  align-self: stretch;
+  align-self: start;
   display: grid;
   grid-template-rows: auto auto;
   gap: 14px;
-  min-height: 100%;
+  min-height: 0;
   height: auto;
-  max-height: calc(100vh - 168px);
+  max-height: calc(100svh - 168px);
   padding: 18px;
   border-radius: 20px;
   overflow: auto;
+  overscroll-behavior: contain;
   scrollbar-color: rgba(0, 122, 255, 0.22) transparent;
   scrollbar-width: thin;
   background:

@@ -37,18 +37,23 @@
             <p id="introSubtitleText">阶段拆解</p>
             <i aria-hidden="true"></i>
           </div>
+          <div class="intro-flow-rail" aria-label="交付流程">
+            <span class="active" data-intro-flow-step="0"><b>01</b><em>阶段拆解</em></span>
+            <span data-intro-flow-step="1"><b>02</b><em>任务排期</em></span>
+            <span data-intro-flow-step="2"><b>03</b><em>里程碑验收</em></span>
+          </div>
           <div class="intro-actions">
             <div class="intro-launch-panel">
-              <span class="intro-launch-label">本地交付工作台</span>
+              <span class="intro-launch-label"><i aria-hidden="true"></i>本地交付工作台</span>
               <button id="enterAppBtn" class="intro-enter-btn" type="button">
                 <span>进入甘特图生成器</span>
                 <em>即刻开始</em>
                 <i aria-hidden="true"></i>
               </button>
               <div class="intro-launch-meta" aria-label="工作台能力">
-                <span>本地保存</span>
-                <span>Excel 流转</span>
-                <span>高清导出</span>
+                <span>本地私有</span>
+                <span>Excel 双向</span>
+                <span>4K 汇报图</span>
               </div>
             </div>
           </div>
@@ -67,14 +72,17 @@
             <button class="active" type="button" data-intro-step="0" aria-selected="true">
               <span>01</span>
               <strong>定义阶段</strong>
+              <small>5 个阶段 · 自动排序</small>
             </button>
             <button type="button" data-intro-step="1" aria-selected="false">
               <span>02</span>
               <strong>拆解任务</strong>
+              <small>20 项任务 · 节假日统计</small>
             </button>
             <button type="button" data-intro-step="2" aria-selected="false">
               <span>03</span>
               <strong>生成预览</strong>
+              <small>周/月视图 · 健康度同步</small>
             </button>
           </div>
           <div class="intro-demo-board" aria-hidden="true">
@@ -148,21 +156,25 @@
         <div class="intro-feature-strip" aria-label="特色功能">
           <article>
             <span>01</span>
+            <i class="feature-mark feature-stage" aria-hidden="true"></i>
             <strong>快速编排阶段</strong>
             <p>阶段周期集中维护，计划结构自动成形。</p>
           </article>
           <article>
             <span>02</span>
+            <i class="feature-mark feature-task" aria-hidden="true"></i>
             <strong>一键拆解任务</strong>
             <p>任务子项一键拆开，责任状态同步追踪。</p>
           </article>
           <article>
             <span>03</span>
+            <i class="feature-mark feature-preview" aria-hidden="true"></i>
             <strong>实时生成甘特</strong>
             <p>周月甘特即时预览，里程碑同步呈现。</p>
           </article>
           <article>
             <span>04</span>
+            <i class="feature-mark feature-data" aria-hidden="true"></i>
             <strong>双向流转数据</strong>
             <p>Excel 双向流转，历史版本随时回溯。</p>
           </article>
