@@ -9,8 +9,168 @@
     <title>项目甘特图生成器</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body>
+  <body class="intro-active">
     <div class="code-fingerprint" aria-hidden="true" hidden data-author="Caius" data-project="Project Gantt Builder" data-fingerprint="CGFB-2026-N7Q4-X1K8" data-rights="ORIGINAL-WORK|INTERNAL-USE-ONLY"></div>
+    <section id="introScreen" class="intro-screen" aria-label="LiteGantt 功能介绍" data-step="0">
+      <div class="intro-ambient" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <div class="intro-shell">
+        <div class="intro-copy">
+          <div class="intro-kicker">
+            <span class="brand-dot"></span>
+            <span>LiteGantt · Delivery Plan Control</span>
+          </div>
+          <h1 class="intro-title-line">
+            <span>敏捷规划</span>
+            <span class="intro-title-divider">/</span>
+            <span>精准交付</span>
+          </h1>
+          <div class="intro-subtitle-rotator" aria-live="polite" aria-label="核心流程">
+            <span class="intro-subtitle-kicker">交付路径</span>
+            <p id="introSubtitleText">阶段拆解</p>
+            <i aria-hidden="true"></i>
+          </div>
+          <div class="intro-actions">
+            <div class="intro-launch-panel">
+              <span class="intro-launch-label">本地交付工作台</span>
+              <button id="enterAppBtn" class="intro-enter-btn" type="button">
+                <span>进入甘特图生成器</span>
+                <em>即刻开始</em>
+                <i aria-hidden="true"></i>
+              </button>
+              <div class="intro-launch-meta" aria-label="工作台能力">
+                <span>本地保存</span>
+                <span>Excel 流转</span>
+                <span>高清导出</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="intro-preview" aria-label="三步生成甘特图演示">
+          <div class="intro-preview-head">
+            <span>三步生成甘特图</span>
+            <strong id="introStepCaption">定义阶段</strong>
+          </div>
+          <div class="intro-generation-track" aria-hidden="true">
+            <span>Live Gantt Build</span>
+            <i></i>
+          </div>
+          <div class="intro-demo-steps" role="tablist" aria-label="演示步骤">
+            <button class="active" type="button" data-intro-step="0" aria-selected="true">
+              <span>01</span>
+              <strong>定义阶段</strong>
+            </button>
+            <button type="button" data-intro-step="1" aria-selected="false">
+              <span>02</span>
+              <strong>拆解任务</strong>
+            </button>
+            <button type="button" data-intro-step="2" aria-selected="false">
+              <span>03</span>
+              <strong>生成预览</strong>
+            </button>
+          </div>
+          <div class="intro-demo-board" aria-hidden="true">
+            <div class="demo-phase-list">
+              <div class="demo-section-title">阶段列表</div>
+              <div class="demo-phase-card phase-one">
+                <b>P1</b>
+                <span>需求梳理</span>
+                <em>9/1-9/15</em>
+              </div>
+              <div class="demo-phase-card phase-two">
+                <b>P2</b>
+                <span>方案配置</span>
+                <em>9/16-10/10</em>
+              </div>
+              <div class="demo-phase-card phase-three">
+                <b>P3</b>
+                <span>UAT 验收</span>
+                <em>10/11-10/30</em>
+              </div>
+            </div>
+            <div class="demo-task-table">
+              <div class="demo-section-title">任务明细</div>
+              <div class="demo-task-head">
+                <span>任务名称</span>
+                <span>开始</span>
+                <span>结束</span>
+                <span>节假日</span>
+              </div>
+              <div class="demo-task-row task-one">
+                <span>客户访谈</span>
+                <span>9/1</span>
+                <span>9/3</span>
+                <strong>0天</strong>
+              </div>
+              <div class="demo-task-row task-two">
+                <span>方案确认</span>
+                <span>9/4</span>
+                <span>9/8</span>
+                <strong>2天</strong>
+              </div>
+              <div class="demo-task-row task-three">
+                <span>里程碑评审</span>
+                <span>9/15</span>
+                <span>9/15</span>
+                <strong>标记</strong>
+              </div>
+            </div>
+            <div class="demo-gantt-panel">
+              <div class="demo-gantt-axis">
+                <span>W1</span>
+                <span>W2</span>
+                <span>W3</span>
+                <span>W4</span>
+              </div>
+              <div class="demo-gantt-line line-one"><i></i></div>
+              <div class="demo-gantt-line line-two"><i></i></div>
+              <div class="demo-gantt-line line-three"><i></i><b></b></div>
+              <div class="demo-callout holiday-callout">节假日已统计</div>
+              <div class="demo-callout milestone-callout">里程碑达成</div>
+              <div class="demo-callout sync-callout">健康度更新</div>
+            </div>
+            <div class="demo-health-card">
+              <span>项目健康度</span>
+              <strong><em id="introHealthScore">78</em>分</strong>
+              <small>逾期任务 0 项</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="intro-feature-strip" aria-label="特色功能">
+          <article>
+            <span>01</span>
+            <strong>快速编排阶段</strong>
+            <p>阶段周期集中维护，计划结构自动成形。</p>
+          </article>
+          <article>
+            <span>02</span>
+            <strong>一键拆解任务</strong>
+            <p>任务子项一键拆开，责任状态同步追踪。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <strong>实时生成甘特</strong>
+            <p>周月甘特即时预览，里程碑同步呈现。</p>
+          </article>
+          <article>
+            <span>04</span>
+            <strong>双向流转数据</strong>
+            <p>Excel 双向流转，历史版本随时回溯。</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell" aria-hidden="true">
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-block">
@@ -126,6 +286,7 @@
         <strong>© 2026 Caius · Project Gantt Builder</strong>
       </div>
     </footer>
+    </div>
 
     <!-- Fullscreen Gantt Preview Modal -->
     <div id="ganttModal" class="gantt-modal" aria-hidden="true">

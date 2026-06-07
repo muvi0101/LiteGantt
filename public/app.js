@@ -101,6 +101,12 @@ const CODE_FINGERPRINT = Object.freeze({
   keywords: 'ORIGINAL-WORK|INTERNAL-USE-ONLY|WRITTEN-AUTHORIZATION-REQUIRED',
 });
 
+const introScreen = document.querySelector('#introScreen');
+const appShell = document.querySelector('#appShell');
+const enterAppBtn = document.querySelector('#enterAppBtn');
+const introSubtitleText = document.querySelector('#introSubtitleText');
+const introStepCaption = document.querySelector('#introStepCaption');
+const introDemoStepButtons = document.querySelectorAll('[data-intro-step]');
 const phaseList = document.querySelector('#phaseList');
 const ganttModal = document.querySelector('#ganttModal');
 const previewPanel = ganttModal ? ganttModal.querySelector('.gantt-modal-dialog') : null;
@@ -148,6 +154,10 @@ let selectedTimelineUnit = 'week';
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
+let introStepIndex = 0;
+let introStepTimer = null;
+let introSubtitleIndex = 0;
+let introSubtitleTimer = null;
 
 const excelImportLabels = {
   action: '导入 Excel',
@@ -183,6 +193,122 @@ const subtaskStatusColors = {
 };
 const subtaskPriorityColors = { '高': '#f43f5e', '中': '#f59e0b', '低': '#14b8a6' };
 const subtaskTemplate = document.querySelector('#subtaskTemplate');
+const introSubtitlePhrases = [
+  '阶段拆解',
+  '任务排期',
+  '里程碑验收',
+];
+const introStepLabels = ['定义阶段', '拆解任务', '生成预览'];
+const introHealthScores = ['62', '74', '88'];
+
+function prefersReducedMotion() {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+function clearIntroTimers() {
+  if (introStepTimer) {
+    window.clearInterval(introStepTimer);
+    introStepTimer = null;
+  }
+  if (introSubtitleTimer) {
+    window.clearInterval(introSubtitleTimer);
+    introSubtitleTimer = null;
+  }
+}
+
+function setIntroSubtitle(nextIndex) {
+  if (!introSubtitleText) return;
+  introSubtitleIndex = ((Number(nextIndex) % introSubtitlePhrases.length) + introSubtitlePhrases.length) % introSubtitlePhrases.length;
+  const phrase = introSubtitlePhrases[introSubtitleIndex];
+  if (prefersReducedMotion()) {
+    introSubtitleText.textContent = phrase;
+    return;
+  }
+  introSubtitleText.classList.add('is-changing');
+  window.setTimeout(() => {
+    introSubtitleText.textContent = phrase;
+    introSubtitleText.classList.remove('is-changing');
+  }, 150);
+}
+
+function startIntroSubtitleLoop() {
+  setIntroSubtitle(0);
+  if (prefersReducedMotion()) return;
+  if (introSubtitleTimer) window.clearInterval(introSubtitleTimer);
+  introSubtitleTimer = window.setInterval(() => setIntroSubtitle(introSubtitleIndex + 1), 3000);
+}
+
+function setIntroStep(stepIndex, { manual = false } = {}) {
+  if (!introScreen) return;
+  introStepIndex = ((Number(stepIndex) % introStepLabels.length) + introStepLabels.length) % introStepLabels.length;
+  introScreen.dataset.step = String(introStepIndex);
+  if (introStepCaption) introStepCaption.textContent = introStepLabels[introStepIndex];
+  const healthScore = document.querySelector('#introHealthScore');
+  if (healthScore) healthScore.textContent = introHealthScores[introStepIndex] || introHealthScores[0];
+
+  introDemoStepButtons.forEach((button) => {
+    const isActive = Number(button.dataset.introStep) === introStepIndex;
+    button.classList.toggle('active', isActive);
+    button.setAttribute('aria-selected', String(isActive));
+  });
+
+  if (manual && !prefersReducedMotion()) {
+    if (introStepTimer) window.clearInterval(introStepTimer);
+    introStepTimer = window.setInterval(() => setIntroStep(introStepIndex + 1), 3800);
+  }
+}
+
+function startIntroStepLoop() {
+  setIntroStep(0);
+  if (prefersReducedMotion()) return;
+  if (introStepTimer) window.clearInterval(introStepTimer);
+  introStepTimer = window.setInterval(() => setIntroStep(introStepIndex + 1), 3800);
+}
+
+function enterApplication({ instant = false } = {}) {
+  clearIntroTimers();
+  if (enterAppBtn) enterAppBtn.disabled = true;
+  if (appShell) appShell.setAttribute('aria-hidden', 'false');
+  if (introScreen) introScreen.setAttribute('aria-hidden', 'true');
+  if (instant && introScreen) {
+    introScreen.style.transition = 'none';
+  }
+  document.body.classList.add('intro-leaving');
+
+  window.requestAnimationFrame(() => {
+    document.body.classList.remove('intro-active');
+    document.body.classList.add('app-entered');
+    window.setTimeout(() => {
+      if (document.body.classList.contains('app-entered') && introScreen) {
+        introScreen.hidden = true;
+      }
+      document.body.classList.remove('intro-leaving');
+    }, instant ? 0 : 520);
+  });
+}
+
+function initIntroScreen() {
+  if (!introScreen || !appShell) {
+    document.body.classList.remove('intro-active');
+    document.body.classList.add('app-entered');
+    return;
+  }
+
+  document.body.classList.add('intro-active');
+  document.body.classList.remove('app-entered');
+  appShell.setAttribute('aria-hidden', 'true');
+  introScreen.setAttribute('aria-hidden', 'false');
+  startIntroSubtitleLoop();
+  startIntroStepLoop();
+
+  if (enterAppBtn) {
+    enterAppBtn.addEventListener('click', () => enterApplication());
+  }
+  introDemoStepButtons.forEach((button) => {
+    button.addEventListener('click', () => setIntroStep(button.dataset.introStep, { manual: true }));
+    button.addEventListener('mouseenter', () => setIntroStep(button.dataset.introStep, { manual: true }));
+  });
+}
 
 function getSubtasks(phaseIndex, taskIndex) {
   const task = state.phases[phaseIndex]?.tasks[taskIndex];
@@ -2413,5 +2539,6 @@ window.addEventListener('resize', () => {
   if (previewZoomMode === 'fit') applyPreviewZoom();
 });
 
+initIntroScreen();
 registerCodeFingerprint();
 render();
