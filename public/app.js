@@ -104,6 +104,7 @@ const CODE_FINGERPRINT = Object.freeze({
 const introScreen = document.querySelector('#introScreen');
 const appShell = document.querySelector('#appShell');
 const enterAppBtn = document.querySelector('#enterAppBtn');
+const introPreviewBtn = document.querySelector('#introPreviewBtn');
 const introSubtitleText = document.querySelector('#introSubtitleText');
 const introFlowStepItems = document.querySelectorAll('[data-intro-flow-step]');
 const introStepCaption = document.querySelector('#introStepCaption');
@@ -236,6 +237,7 @@ function setIntroSubtitle(nextIndex) {
 }
 
 function startIntroSubtitleLoop() {
+  if (!introSubtitleText && introFlowStepItems.length === 0) return;
   setIntroSubtitle(0);
   if (prefersReducedMotion()) return;
   if (introSubtitleTimer) window.clearInterval(introSubtitleTimer);
@@ -307,6 +309,9 @@ function initIntroScreen() {
 
   if (enterAppBtn) {
     enterAppBtn.addEventListener('click', () => enterApplication());
+  }
+  if (introPreviewBtn) {
+    introPreviewBtn.addEventListener('click', () => setIntroStep(0, { manual: true }));
   }
   introDemoStepButtons.forEach((button) => {
     button.addEventListener('click', () => setIntroStep(button.dataset.introStep, { manual: true }));
