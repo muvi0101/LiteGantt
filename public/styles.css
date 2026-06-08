@@ -4363,24 +4363,34 @@ input[readonly] {
 }
 
 .plan-console .health-panel {
-  position: sticky;
-  top: var(--health-sticky-top);
+  position: relative;
   align-self: stretch;
-  display: grid;
-  grid-template-rows: auto auto;
-  gap: 14px;
+  display: block;
   min-height: 0;
-  height: 100%;
+  height: auto;
   max-height: none;
   padding: 18px;
   border-radius: 20px;
-  overflow: hidden;
+  overflow: visible;
   overscroll-behavior: contain;
   scrollbar-color: rgba(0, 122, 255, 0.22) transparent;
   scrollbar-width: thin;
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(244, 250, 255, 0.78)),
     rgba(255, 255, 255, 0.72);
+}
+
+.plan-console .health-panel-sticky {
+  position: sticky;
+  top: var(--health-sticky-top);
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 14px;
+  max-height: calc(100svh - var(--health-sticky-top) - 18px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(0, 122, 255, 0.22) transparent;
+  scrollbar-width: thin;
 }
 
 .plan-console .health-panel-head {
@@ -5582,6 +5592,13 @@ input[readonly] {
   .plan-console .health-panel {
     position: relative;
     top: auto;
+  }
+
+  .plan-console .health-panel-sticky {
+    position: static;
+    top: auto;
+    max-height: none;
+    overflow: visible;
   }
 
   .control-board {
