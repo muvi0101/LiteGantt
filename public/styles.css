@@ -22,6 +22,7 @@
   --body-font: "Avenir Next", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, sans-serif;
   --display-font: "Avenir Next Condensed", "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif;
   --footer-height: 34px;
+  --health-sticky-top: 148px;
 }
 
 * {
@@ -4363,17 +4364,17 @@ input[readonly] {
 
 .plan-console .health-panel {
   position: sticky;
-  top: 148px;
-  align-self: start;
+  top: var(--health-sticky-top);
+  align-self: stretch;
   display: grid;
   grid-template-rows: auto auto;
   gap: 14px;
   min-height: 0;
-  height: auto;
-  max-height: calc(100svh - 168px);
+  height: 100%;
+  max-height: none;
   padding: 18px;
   border-radius: 20px;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   scrollbar-color: rgba(0, 122, 255, 0.22) transparent;
   scrollbar-width: thin;

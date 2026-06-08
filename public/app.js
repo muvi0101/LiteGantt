@@ -103,6 +103,8 @@ const CODE_FINGERPRINT = Object.freeze({
 
 const introScreen = document.querySelector('#introScreen');
 const appShell = document.querySelector('#appShell');
+const topbar = document.querySelector('.topbar');
+const layout = document.querySelector('.layout');
 const enterAppBtn = document.querySelector('#enterAppBtn');
 const introPreviewBtn = document.querySelector('#introPreviewBtn');
 const introSubtitleText = document.querySelector('#introSubtitleText');
@@ -289,6 +291,7 @@ function enterApplication({ instant = false } = {}) {
         introScreen.hidden = true;
       }
       document.body.classList.remove('intro-leaving');
+      syncHealthPanelStickyOffset();
     }, instant ? 0 : 520);
   });
 }
@@ -297,6 +300,7 @@ function initIntroScreen() {
   if (!introScreen || !appShell) {
     document.body.classList.remove('intro-active');
     document.body.classList.add('app-entered');
+    syncHealthPanelStickyOffset();
     return;
   }
 
@@ -687,6 +691,15 @@ function registerCodeFingerprint() {
 }
 
 function setStatus() {}
+
+function syncHealthPanelStickyOffset() {
+  if (!topbar || !layout) return;
+  const topbarHeight = topbar.getBoundingClientRect().height;
+  const layoutStyles = window.getComputedStyle(layout);
+  const layoutPaddingTop = Number.parseFloat(layoutStyles.paddingTop) || 0;
+  const stickyTop = Math.max(0, Math.ceil(topbarHeight + layoutPaddingTop));
+  document.documentElement.style.setProperty('--health-sticky-top', `${stickyTop}px`);
+}
 
 function normalizeTimelineUnit(unit) {
   return unit === 'month' ? 'month' : 'week';
@@ -2545,9 +2558,13 @@ if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => setManualPreviewZoom(
 if (zoomInBtn) zoomInBtn.addEventListener('click', () => setManualPreviewZoom(currentPreviewZoom + ZOOM_STEP));
 if (zoomSlider) zoomSlider.addEventListener('input', () => setManualPreviewZoom(Number(zoomSlider.value) / 100));
 window.addEventListener('resize', () => {
+  syncHealthPanelStickyOffset();
   if (previewZoomMode === 'fit') applyPreviewZoom();
 });
+window.addEventListener('load', syncHealthPanelStickyOffset);
+document.fonts?.ready?.then(syncHealthPanelStickyOffset).catch(() => {});
 
+syncHealthPanelStickyOffset();
 initIntroScreen();
 registerCodeFingerprint();
 render();
