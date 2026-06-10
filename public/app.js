@@ -127,6 +127,13 @@ const initMenu = document.querySelector('.init-menu');
 const initMenuBtn = document.querySelector('#initMenuBtn');
 const initMenuPanel = document.querySelector('#initMenuPanel');
 const saveVersionBtn = document.querySelector('#saveVersionBtn');
+const saveVersionDialog = document.querySelector('#saveVersionDialog');
+const saveVersionBackdrop = document.querySelector('#saveVersionBackdrop');
+const saveVersionNameInput = document.querySelector('#saveVersionNameInput');
+const saveVersionHint = document.querySelector('#saveVersionHint');
+const confirmSaveVersionBtn = document.querySelector('#confirmSaveVersionBtn');
+const cancelSaveVersionBtn = document.querySelector('#cancelSaveVersionBtn');
+const dismissSaveVersionBtn = document.querySelector('#dismissSaveVersionBtn');
 const versionHistoryBtn = document.querySelector('#versionHistoryBtn');
 const versionHistoryBackdrop = document.querySelector('#versionHistoryBackdrop');
 const versionHistoryDrawer = document.querySelector('#versionHistoryDrawer');
@@ -1287,6 +1294,50 @@ function saveCurrentVersion(name = '') {
   }
 }
 
+function setSaveVersionHint(message = '保存后可在历史版本中恢复或导出。', type = '') {
+  if (!saveVersionHint) return;
+  saveVersionHint.textContent = message;
+  saveVersionHint.dataset.state = type;
+}
+
+function openSaveVersionDialog() {
+  if (!saveVersionDialog) {
+    saveCurrentVersion();
+    return;
+  }
+  closeInitMenu();
+  closeIoMenu();
+  saveVersionDialog.classList.add('open');
+  saveVersionDialog.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('save-version-open');
+  setSaveVersionHint();
+  if (saveVersionNameInput) {
+    saveVersionNameInput.value = makeDefaultVersionName();
+    requestAnimationFrame(() => {
+      saveVersionNameInput.focus();
+      saveVersionNameInput.select();
+    });
+  }
+}
+
+function closeSaveVersionDialog() {
+  saveVersionDialog?.classList.remove('open');
+  saveVersionDialog?.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('save-version-open');
+  setSaveVersionHint();
+}
+
+function confirmSaveVersion() {
+  const name = String(saveVersionNameInput?.value || '').trim();
+  if (!name) {
+    setSaveVersionHint('请先填写版本名称。', 'error');
+    saveVersionNameInput?.focus();
+    return;
+  }
+  const record = saveCurrentVersion(name);
+  if (record) closeSaveVersionDialog();
+}
+
 function openVersionHistory() {
   renderVersionHistory();
   versionHistoryDrawer?.classList.add('open');
@@ -2438,7 +2489,7 @@ document.querySelector('#addPhaseBtn').addEventListener('click', () => {
     name: '新阶段',
     start: '',
     end: '',
-    tasks: [{ name: '新任务', start: '', end: '', status: '未开始', progress: 0, milestone: false }],
+    tasks: [],
   });
   focusPhase(0);
 });
@@ -2498,7 +2549,20 @@ if (importExcelBtn && importExcelInput) {
   });
   importExcelInput.addEventListener('change', () => importExcel(importExcelInput.files?.[0]));
 }
-if (saveVersionBtn) saveVersionBtn.addEventListener('click', () => saveCurrentVersion());
+if (saveVersionBtn) saveVersionBtn.addEventListener('click', openSaveVersionDialog);
+if (saveVersionBackdrop) saveVersionBackdrop.addEventListener('click', closeSaveVersionDialog);
+if (cancelSaveVersionBtn) cancelSaveVersionBtn.addEventListener('click', closeSaveVersionDialog);
+if (dismissSaveVersionBtn) dismissSaveVersionBtn.addEventListener('click', closeSaveVersionDialog);
+if (confirmSaveVersionBtn) confirmSaveVersionBtn.addEventListener('click', confirmSaveVersion);
+if (saveVersionNameInput) {
+  saveVersionNameInput.addEventListener('input', () => setSaveVersionHint());
+  saveVersionNameInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      confirmSaveVersion();
+    }
+  });
+}
 if (versionHistoryBtn) versionHistoryBtn.addEventListener('click', openVersionHistory);
 if (drawerSaveVersionBtn) drawerSaveVersionBtn.addEventListener('click', () => saveCurrentVersion(versionNameInput?.value));
 if (closeVersionHistoryBtn) closeVersionHistoryBtn.addEventListener('click', closeVersionHistory);
@@ -2544,6 +2608,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     if (initMenu && initMenu.classList.contains('open')) closeInitMenu();
     else if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
+    else if (saveVersionDialog && saveVersionDialog.classList.contains('open')) closeSaveVersionDialog();
     else if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
     else if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();
     else if (isBreakdownTargetValid()) closeBreakdown();

@@ -2866,6 +2866,138 @@ input[readonly] {
   opacity: 1;
 }
 
+body.save-version-open {
+  overflow: hidden;
+}
+
+.save-version-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.save-version-dialog.open {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.save-version-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.22);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.save-version-card {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 16px;
+  width: min(100%, 460px);
+  padding: 20px;
+  border: 1px solid rgba(45, 63, 92, 0.15);
+  border-radius: 16px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(242, 248, 255, 0.94)),
+    rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(22, 33, 58, 0.22);
+  transform: translateY(10px) scale(0.98);
+  transition: transform 0.18s ease;
+}
+
+.save-version-dialog.open .save-version-card {
+  transform: translateY(0) scale(1);
+}
+
+.save-version-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(45, 63, 92, 0.12);
+}
+
+.save-version-head h2 {
+  margin: 3px 0 0;
+  color: var(--deep);
+  font-size: 24px;
+}
+
+.save-version-field {
+  display: grid;
+  gap: 7px;
+}
+
+.save-version-field span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.save-version-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgba(0, 122, 255, 0.2);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #10213a;
+  font-size: 15px;
+  font-weight: 760;
+  outline: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.save-version-field input:focus {
+  border-color: rgba(0, 122, 255, 0.55);
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.12);
+}
+
+.save-version-hint {
+  min-height: 20px;
+  margin: -3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.save-version-hint[data-state="error"] {
+  color: #b42342;
+}
+
+.save-version-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 10px;
+}
+
+.save-version-actions button {
+  min-height: 44px;
+}
+
+.save-version-cancel {
+  border: 1px solid rgba(45, 63, 92, 0.14);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.84);
+  color: #334155;
+  font-size: 14px;
+  font-weight: 820;
+}
+
+.save-version-cancel:hover {
+  border-color: rgba(0, 122, 255, 0.24);
+  background: rgba(239, 248, 255, 0.92);
+  color: #0f4c81;
+}
+
 .version-history-drawer {
   position: fixed;
   top: 0;
@@ -5816,6 +5948,18 @@ input[readonly] {
   .version-history-drawer {
     width: min(100vw, 480px);
     padding: 16px;
+  }
+
+  .save-version-dialog {
+    padding: 14px;
+  }
+
+  .save-version-card {
+    padding: 16px;
+  }
+
+  .save-version-actions {
+    grid-template-columns: 1fr;
   }
 
   .version-history-save {
