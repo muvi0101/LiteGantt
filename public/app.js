@@ -65,7 +65,24 @@ const defaultProject = {
 let state = structuredClone(defaultProject);
 
 const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
-const phaseAccents = ['#116acb', '#13a8c8', '#16a272', '#5f6df1', '#8b5cf6', '#d89419', '#e11d48'];
+const phaseAccents = [
+  '#116acb',
+  '#13a8c8',
+  '#16a272',
+  '#5f6df1',
+  '#8b5cf6',
+  '#d89419',
+  '#e11d48',
+  '#0f766e',
+  '#9333ea',
+  '#ea580c',
+  '#0891b2',
+  '#65a30d',
+  '#c026d3',
+  '#b45309',
+  '#2563eb',
+  '#be123c',
+];
 const taskStatuses = ['未开始', '进行中', '已完成', '延期'];
 const statusColorMap = {
   未开始: '#94a3b8',
@@ -83,6 +100,7 @@ const DEFAULT_TASK_DAYS = 7;
 const PREVIEW_WEEK_WIDTH = 72;
 const PREVIEW_MONTH_WIDTH = 126;
 const PREVIEW_MAX_WEEKS = 104;
+const PREVIEW_WEEK_MONTH_LABEL_PADDING = 44;
 const PREVIEW_MILESTONE_MARKER_WIDTH = 10;
 const PREVIEW_MILESTONE_STAR_WIDTH = 16;
 const PREVIEW_MILESTONE_BAR_TO_STAR_GAP = 8;
@@ -115,6 +133,7 @@ const phaseList = document.querySelector('#phaseList');
 const ganttModal = document.querySelector('#ganttModal');
 const previewPanel = ganttModal ? ganttModal.querySelector('.gantt-modal-dialog') : null;
 const previewScroll = ganttModal ? ganttModal.querySelector('.preview-scroll') : null;
+const previewRiskNotice = ganttModal ? ganttModal.querySelector('#previewRiskNotice') : null;
 const previewCanvas = ganttModal ? ganttModal.querySelector('#previewCanvas') : null;
 const ganttPreview = ganttModal ? ganttModal.querySelector('#ganttPreview') : null;
 const projectStats = document.querySelector('#projectStats');
@@ -152,6 +171,7 @@ const exportExcelBtn = document.querySelector('#exportExcelBtn');
 const exportImageBtn = document.querySelector('#exportImageBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
 const timelineUnitButtons = document.querySelectorAll('[data-gantt-unit]');
+const previewEditBtn = ganttModal ? ganttModal.querySelector('#previewEditBtn') : null;
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
 const zoomInBtn = ganttModal ? ganttModal.querySelector('#zoomInBtn') : null;
@@ -161,6 +181,8 @@ const zoomValue = ganttModal ? ganttModal.querySelector('#zoomValue') : null;
 let previewZoomMode = 'fit';
 let manualPreviewZoom = 1;
 let currentPreviewZoom = 1;
+let previewEditMode = false;
+let previewDragState = null;
 let selectedTimelineUnit = 'week';
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
@@ -716,6 +738,56 @@ function timelineUnitLabel(unit = selectedTimelineUnit) {
   return normalizeTimelineUnit(unit) === 'month' ? '月视图' : '周视图';
 }
 
+function updatePreviewEditControls() {
+  if (previewEditBtn) {
+    previewEditBtn.classList.toggle('active', previewEditMode);
+    previewEditBtn.setAttribute('aria-pressed', String(previewEditMode));
+    previewEditBtn.textContent = previewEditMode ? '完成编辑' : '编辑';
+  }
+  if (previewPanel) {
+    previewPanel.classList.toggle('edit-mode', previewEditMode);
+  }
+  if (ganttPreview) {
+    ganttPreview.classList.toggle('preview-edit-mode', previewEditMode);
+  }
+}
+
+function clearPreviewRiskNotice() {
+  if (!previewRiskNotice) return;
+  previewRiskNotice.hidden = true;
+  previewRiskNotice.textContent = '';
+  previewRiskNotice.dataset.tone = 'clear';
+}
+
+function showPreviewRiskNotice(messages, tone = 'warning') {
+  if (!previewRiskNotice) return;
+  const list = Array.isArray(messages) ? messages.filter(Boolean) : [messages].filter(Boolean);
+  if (!list.length) {
+    clearPreviewRiskNotice();
+    return;
+  }
+  previewRiskNotice.hidden = false;
+  previewRiskNotice.dataset.tone = tone;
+  previewRiskNotice.textContent = '';
+  list.forEach((message) => {
+    const item = document.createElement('span');
+    item.textContent = message;
+    previewRiskNotice.append(item);
+  });
+}
+
+function setPreviewEditMode(enabled, renderPreviewAfterChange = true) {
+  if (enabled && normalizeTimelineUnit(selectedTimelineUnit) !== 'week') {
+    selectedTimelineUnit = 'week';
+    updateTimelineUnitControls();
+  }
+  previewEditMode = Boolean(enabled);
+  updatePreviewEditControls();
+  if (renderPreviewAfterChange && ganttModal?.classList.contains('open')) {
+    renderRightPane();
+  }
+}
+
 function updateTimelineUnitControls() {
   const unit = normalizeTimelineUnit(selectedTimelineUnit);
   timelineUnitButtons.forEach((button) => {
@@ -728,10 +800,15 @@ function updateTimelineUnitControls() {
     label.textContent = '预览甘特图';
   }
   document.body.dataset.ganttUnit = unit;
+  updatePreviewEditControls();
 }
 
 function setTimelineUnit(unit, announce = false) {
-  selectedTimelineUnit = normalizeTimelineUnit(unit);
+  const nextUnit = normalizeTimelineUnit(unit);
+  if (previewEditMode && nextUnit !== 'week') {
+    previewEditMode = false;
+  }
+  selectedTimelineUnit = nextUnit;
   updateTimelineUnitControls();
   if (ganttModal?.classList.contains('open')) renderRightPane();
   if (announce) {
@@ -936,6 +1013,17 @@ function sortTasksByStart(phase) {
   });
 }
 
+function sortTasksByStartWithBreakdownRemap(phase, phaseIndex) {
+  const previousTasks = [...phase.tasks];
+  sortTasksByStart(phase);
+  if (breakdownOpen.phaseIndex !== phaseIndex || !Number.isInteger(breakdownOpen.taskIndex)) return;
+  const openTask = previousTasks[breakdownOpen.taskIndex];
+  const nextTaskIndex = phase.tasks.indexOf(openTask);
+  breakdownOpen = nextTaskIndex >= 0
+    ? { ...breakdownOpen, taskIndex: nextTaskIndex }
+    : { phaseIndex: -1, taskIndex: -1 };
+}
+
 function isPhaseReadyForSort(phase) {
   return isIsoDate(phase.start) && isIsoDate(phase.end);
 }
@@ -1049,20 +1137,58 @@ function estimatePreviewMilestoneWidth(task) {
   return Math.ceil(textWidth);
 }
 
+function estimatePreviewTextWidth(text, font, padding = 0) {
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  if (context) context.font = font;
+  const textWidth = context ? context.measureText(String(text || '')).width : String(text || '').length * 10;
+  return Math.ceil(textWidth + padding);
+}
+
 function getPreviewDayOffset(value, projectStartValue) {
   return Math.max(0, Math.round((dateSortValue(value) - dateSortValue(projectStartValue)) / 86400000));
 }
 
-function getPreviewTimelinePx(dayOffset) {
-  return (dayOffset * PREVIEW_WEEK_WIDTH) / 7;
+function getPreviewWeekWidth(weekIndex, weekWidthsPx) {
+  return weekWidthsPx?.[weekIndex - 1] || PREVIEW_WEEK_WIDTH;
 }
 
-function getPreviewDurationPx(startOffset, durationDays) {
-  return getPreviewTimelinePx(startOffset + durationDays) - getPreviewTimelinePx(startOffset);
+function getPreviewTimelinePx(dayOffset, weekWidthsPx) {
+  if (dayOffset < 0) {
+    return (dayOffset * getPreviewWeekWidth(1, weekWidthsPx)) / 7;
+  }
+  const weekIndex = Math.floor(dayOffset / 7) + 1;
+  const dayInWeek = dayOffset % 7;
+  let px = 0;
+  for (let index = 1; index < weekIndex; index += 1) px += getPreviewWeekWidth(index, weekWidthsPx);
+  return px + (dayInWeek * getPreviewWeekWidth(weekIndex, weekWidthsPx)) / 7;
 }
 
-function getPreviewMilestonePointPx(item, projectStartValue) {
-  return getPreviewTimelinePx(getPreviewDayOffset(item.end, projectStartValue) + 1);
+function getPreviewDurationPx(startOffset, durationDays, weekWidthsPx) {
+  return getPreviewTimelinePx(startOffset + durationDays, weekWidthsPx) - getPreviewTimelinePx(startOffset, weekWidthsPx);
+}
+
+function getPreviewDayOffsetFromTimelinePx(px, weekWidthsPx) {
+  const widths = Array.isArray(weekWidthsPx) && weekWidthsPx.length ? weekWidthsPx : [PREVIEW_WEEK_WIDTH];
+  if (px < 0) {
+    return Math.round((px / (widths[0] || PREVIEW_WEEK_WIDTH)) * 7);
+  }
+
+  let remainingPx = px;
+  for (let index = 0; index < widths.length; index += 1) {
+    const widthPx = widths[index] || PREVIEW_WEEK_WIDTH;
+    if (remainingPx <= widthPx) {
+      return index * 7 + Math.round((remainingPx / widthPx) * 7);
+    }
+    remainingPx -= widthPx;
+  }
+
+  const lastWidth = widths[widths.length - 1] || PREVIEW_WEEK_WIDTH;
+  return widths.length * 7 + Math.round((remainingPx / lastWidth) * 7);
+}
+
+function getPreviewMilestonePointPx(item, projectStartValue, weekWidthsPx) {
+  return getPreviewTimelinePx(getPreviewDayOffset(item.end, projectStartValue) + 1, weekWidthsPx);
 }
 
 function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
@@ -1103,7 +1229,7 @@ function getPreviewRange() {
 function getPreviewRows() {
   return state.phases.flatMap((phase, phaseIndex) => [
     { ...phase, progress: getPhaseProgress(phase), kind: 'phase', phaseIndex },
-    ...phase.tasks.map((task) => ({ ...task, kind: 'sub', phaseIndex })),
+    ...phase.tasks.map((task, taskIndex) => ({ ...task, kind: 'sub', phaseIndex, taskIndex })),
   ]);
 }
 
@@ -1120,7 +1246,44 @@ function getMonthBands(projectStartValue, totalWeeks) {
       activeBand.toWeek = weekIndex;
     }
   }
-  return bands;
+  return bands.map((band) => {
+    return {
+      ...band,
+      spanWeeks: band.toWeek - band.fromWeek + 1,
+    };
+  });
+}
+
+function buildPreviewWeekColumns(projectStartValue, totalWeeks) {
+  const weekColumns = Array.from({ length: totalWeeks }, (_, index) => {
+    const weekStart = addDaysIso(projectStartValue, index * 7);
+    return {
+      weekIndex: index + 1,
+      start: weekStart,
+      end: addDaysIso(weekStart, 6),
+      widthPx: PREVIEW_WEEK_WIDTH,
+    };
+  });
+
+  getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
+    const requiredWidth = estimatePreviewTextWidth(
+      band.label,
+      '850 15px "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif',
+      PREVIEW_WEEK_MONTH_LABEL_PADDING,
+    );
+    const spanColumns = weekColumns.slice(band.fromWeek - 1, band.toWeek);
+    const currentWidth = spanColumns.reduce((sum, column) => sum + column.widthPx, 0);
+    if (!spanColumns.length || currentWidth >= requiredWidth) return;
+    const extraWidth = (requiredWidth - currentWidth) / spanColumns.length;
+    spanColumns.forEach((column) => {
+      column.widthPx += extraWidth;
+    });
+  });
+
+  weekColumns.forEach((column) => {
+    column.widthPx = Math.ceil(column.widthPx);
+  });
+  return weekColumns;
 }
 
 function getMonthStartIso(value) {
@@ -1857,15 +2020,337 @@ function getPreviewBarMetrics(item, timeline) {
   }
 
   const dayOffset = getPreviewDayOffset(item.start, timeline.projectStartValue);
-  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, timeline.projectStartValue) : null;
+  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, timeline.projectStartValue, timeline.weekWidthsPx) : null;
   const barWidthPx = drawAsMilestonePoint
     ? PREVIEW_MILESTONE_MARKER_WIDTH
-    : getPreviewDurationPx(dayOffset, durationDays);
+    : getPreviewDurationPx(dayOffset, durationDays, timeline.weekWidthsPx);
   return {
-    leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : getPreviewTimelinePx(dayOffset),
+    leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : getPreviewTimelinePx(dayOffset, timeline.weekWidthsPx),
     barWidthPx,
     pointPx,
   };
+}
+
+function shiftSubtaskSchedule(subtask, dayDelta) {
+  if (!subtask || !dayDelta) return;
+  if (isIsoDate(subtask.start)) subtask.start = addDaysIso(subtask.start, dayDelta);
+  if (isIsoDate(subtask.end)) subtask.end = addDaysIso(subtask.end, dayDelta);
+}
+
+function shiftTaskSchedule(task, dayDelta) {
+  if (!task || !dayDelta || !isIsoDate(task.start) || !isIsoDate(task.end)) return false;
+  task.start = addDaysIso(task.start, dayDelta);
+  task.end = addDaysIso(task.end, dayDelta);
+  task.endTouched = true;
+  if (Array.isArray(task.subtasks)) {
+    task.subtasks.forEach((subtask) => shiftSubtaskSchedule(subtask, dayDelta));
+  }
+  return true;
+}
+
+function normalizeTaskSubtasks(task) {
+  if (!Array.isArray(task?.subtasks)) return;
+  task.subtasks.forEach((subtask) => {
+    ensureSubtaskDefaults(subtask, task);
+    normalizeSubtaskDates(subtask, task);
+  });
+}
+
+function resizeTaskSchedule(task, nextStart, nextEnd) {
+  if (!task || !isIsoDate(nextStart) || !isIsoDate(nextEnd)) return false;
+  if (compareIsoDates(nextEnd, nextStart) < 0) return false;
+  task.start = nextStart;
+  task.end = nextEnd;
+  task.endTouched = true;
+  normalizeTaskSubtasks(task);
+  return true;
+}
+
+function ensurePhaseCoversTask(phase, task) {
+  if (!phase || !task || !isIsoDate(task.start) || !isIsoDate(task.end)) return;
+  if (!isIsoDate(phase.start) || compareIsoDates(task.start, phase.start) < 0) phase.start = task.start;
+  if (!isIsoDate(phase.end) || compareIsoDates(task.end, phase.end) > 0) phase.end = task.end;
+}
+
+function getPhaseBoundaryRiskMessages(phase, nextStart, nextEnd) {
+  const messages = [];
+  if (!phase || !isIsoDate(nextStart) || !isIsoDate(nextEnd)) return messages;
+  const beforeStart = phase.start;
+  const beforeEnd = phase.end;
+  const willExtendStart = isIsoDate(beforeStart) && compareIsoDates(nextStart, beforeStart) < 0;
+  const willExtendEnd = isIsoDate(beforeEnd) && compareIsoDates(nextEnd, beforeEnd) > 0;
+  if (willExtendStart || willExtendEnd || !isIsoDate(beforeStart) || !isIsoDate(beforeEnd)) {
+    const finalStart = willExtendStart || !isIsoDate(beforeStart) ? nextStart : beforeStart;
+    const finalEnd = willExtendEnd || !isIsoDate(beforeEnd) ? nextEnd : beforeEnd;
+    messages.push(`已超出原阶段范围，阶段周期将同步为 ${finalStart} - ${finalEnd}`);
+  }
+  return messages;
+}
+
+function getHolidayRiskMessages(start, end, subject = '任务') {
+  const summary = summarizeHolidayRange(start, end);
+  if (summary.tone !== 'holiday' && summary.tone !== 'weekend') return [];
+  return [`${subject}区间包含 ${summary.primary}非工作日（${summary.secondary}）`];
+}
+
+function buildScheduleRiskMessages(phase, task, nextStart, nextEnd, subject = '任务') {
+  return [
+    ...getPhaseBoundaryRiskMessages(phase, nextStart, nextEnd),
+    ...getHolidayRiskMessages(nextStart, nextEnd, task?.milestone ? '里程碑' : subject),
+  ];
+}
+
+function applyPreviewTaskDrag(phaseIndex, taskIndex, dayDelta) {
+  const phase = state.phases[phaseIndex];
+  const task = phase?.tasks?.[taskIndex];
+  const nextStart = task && isIsoDate(task.start) ? addDaysIso(task.start, dayDelta) : '';
+  const nextEnd = task && isIsoDate(task.end) ? addDaysIso(task.end, dayDelta) : '';
+  const riskMessages = buildScheduleRiskMessages(phase, task, nextStart, nextEnd, '任务');
+  if (!phase || !task || !shiftTaskSchedule(task, dayDelta)) return;
+  ensurePhaseCoversTask(phase, task);
+  syncPhaseStartFromTasks(phase);
+  sortTasksByStartWithBreakdownRemap(phase, phaseIndex);
+  if (isPhaseReadyForSort(phase)) sortPhasesByStart();
+  syncProjectStart();
+  render();
+  showPreviewRiskNotice(riskMessages, riskMessages.length ? 'warning' : 'ok');
+  setStatus(`已调整任务：${task.name || '未命名任务'}（${task.start} 至 ${task.end}）。`, 'ok');
+}
+
+function applyPreviewTaskResize(phaseIndex, taskIndex, nextStart, nextEnd) {
+  const phase = state.phases[phaseIndex];
+  const task = phase?.tasks?.[taskIndex];
+  const riskMessages = buildScheduleRiskMessages(phase, task, nextStart, nextEnd, '任务');
+  if (!phase || !task || !resizeTaskSchedule(task, nextStart, nextEnd)) return;
+  ensurePhaseCoversTask(phase, task);
+  syncPhaseStartFromTasks(phase);
+  sortTasksByStartWithBreakdownRemap(phase, phaseIndex);
+  if (isPhaseReadyForSort(phase)) sortPhasesByStart();
+  syncProjectStart();
+  render();
+  showPreviewRiskNotice(riskMessages, riskMessages.length ? 'warning' : 'ok');
+  setStatus(`已调整任务工期：${task.name || '未命名任务'}（${task.start} 至 ${task.end}）。`, 'ok');
+}
+
+function applyPreviewMilestoneDrag(phaseIndex, taskIndex, nextStart, nextEnd) {
+  const phase = state.phases[phaseIndex];
+  const task = phase?.tasks?.[taskIndex];
+  const riskMessages = buildScheduleRiskMessages(phase, task, nextStart, nextEnd, '里程碑');
+  if (!phase || !task || !resizeTaskSchedule(task, nextStart, nextEnd)) return;
+  ensurePhaseCoversTask(phase, task);
+  syncPhaseStartFromTasks(phase);
+  sortTasksByStartWithBreakdownRemap(phase, phaseIndex);
+  if (isPhaseReadyForSort(phase)) sortPhasesByStart();
+  syncProjectStart();
+  render();
+  showPreviewRiskNotice(riskMessages, riskMessages.length ? 'warning' : 'ok');
+  setStatus(`已调整里程碑：${task.name || '未命名里程碑'}（${task.start} 至 ${task.end}）。`, 'ok');
+}
+
+function getPreviewDragDates(dragState) {
+  const start = addDaysIso(dragState.projectStartValue, dragState.currentStartOffset);
+  const end = addDaysIso(dragState.projectStartValue, dragState.currentEndOffset - 1);
+  return { start, end };
+}
+
+function updatePreviewDragLabel(dragState) {
+  if (!dragState.dragLabel) return;
+  const { start, end } = getPreviewDragDates(dragState);
+  dragState.dragLabel.textContent = `${start} - ${end}`;
+}
+
+function updatePreviewTaskDrag(event) {
+  if (!previewDragState || event.pointerId !== previewDragState.pointerId) return;
+  event.preventDefault();
+  const zoom = Math.max(currentPreviewZoom || 1, FIT_PREVIEW_MIN_ZOOM);
+  const deltaPx = (event.clientX - previewDragState.startClientX) / zoom;
+  const mode = previewDragState.mode || 'move';
+
+  if (mode === 'resize-start') {
+    const nextStartOffset = Math.min(
+      getPreviewDayOffsetFromTimelinePx(previewDragState.startLeftPx + deltaPx, previewDragState.weekWidthsPx),
+      previewDragState.endDayOffset - 1,
+    );
+    previewDragState.currentStartOffset = nextStartOffset;
+    previewDragState.currentEndOffset = previewDragState.endDayOffset;
+    previewDragState.dayDelta = nextStartOffset - previewDragState.startDayOffset;
+  } else if (mode === 'resize-end') {
+    const nextEndOffset = Math.max(
+      getPreviewDayOffsetFromTimelinePx(previewDragState.startLeftPx + previewDragState.startWidthPx + deltaPx, previewDragState.weekWidthsPx),
+      previewDragState.startDayOffset + 1,
+    );
+    previewDragState.currentStartOffset = previewDragState.startDayOffset;
+    previewDragState.currentEndOffset = nextEndOffset;
+    previewDragState.dayDelta = nextEndOffset - previewDragState.endDayOffset;
+  } else if (mode === 'milestone') {
+    const nextEndOffset = getPreviewDayOffsetFromTimelinePx(
+      previewDragState.startMarkerPointPx + deltaPx,
+      previewDragState.weekWidthsPx,
+    );
+    if (previewDragState.singleDayMilestone) {
+      previewDragState.currentStartOffset = nextEndOffset - 1;
+      previewDragState.currentEndOffset = nextEndOffset;
+      previewDragState.dayDelta = previewDragState.currentStartOffset - previewDragState.startDayOffset;
+    } else {
+      previewDragState.currentStartOffset = previewDragState.startDayOffset;
+      previewDragState.currentEndOffset = Math.max(nextEndOffset, previewDragState.startDayOffset + 1);
+      previewDragState.dayDelta = previewDragState.currentEndOffset - previewDragState.endDayOffset;
+    }
+  } else {
+    const nextDayOffset = getPreviewDayOffsetFromTimelinePx(
+      previewDragState.startLeftPx + deltaPx,
+      previewDragState.weekWidthsPx,
+    );
+    const dayDelta = nextDayOffset - previewDragState.startDayOffset;
+    previewDragState.currentStartOffset = previewDragState.startDayOffset + dayDelta;
+    previewDragState.currentEndOffset = previewDragState.endDayOffset + dayDelta;
+    previewDragState.dayDelta = dayDelta;
+  }
+
+  const snappedLeftPx = getPreviewTimelinePx(previewDragState.currentStartOffset, previewDragState.weekWidthsPx);
+  const snappedRightPx = getPreviewTimelinePx(previewDragState.currentEndOffset, previewDragState.weekWidthsPx);
+  const snappedWidthPx = Math.max(1, snappedRightPx - snappedLeftPx);
+  previewDragState.shell.style.left = `${snappedLeftPx}px`;
+  previewDragState.shell.style.width = `${snappedWidthPx}px`;
+  if (previewDragState.fill) previewDragState.fill.style.width = `${snappedWidthPx}px`;
+  if (previewDragState.marker) {
+    const nextPointPx = getPreviewTimelinePx(
+      previewDragState.currentEndOffset,
+      previewDragState.weekWidthsPx,
+    );
+    previewDragState.marker.style.left = `${nextPointPx + previewDragState.markerGapPx}px`;
+  }
+  updatePreviewDragLabel(previewDragState);
+}
+
+function cleanupPreviewTaskDrag() {
+  if (!previewDragState) return null;
+  const dragState = previewDragState;
+  const captureElement = dragState.captureElement || dragState.shell;
+  captureElement.removeEventListener('pointermove', updatePreviewTaskDrag);
+  captureElement.removeEventListener('pointerup', finishPreviewTaskDrag);
+  captureElement.removeEventListener('pointercancel', cancelPreviewTaskDrag);
+  try {
+    captureElement.releasePointerCapture(dragState.pointerId);
+  } catch {
+    // Pointer capture may already be released when the browser cancels a drag.
+  }
+  dragState.dragLabel?.remove();
+  dragState.shell.classList.remove('is-dragging');
+  dragState.shell.classList.remove('is-resizing');
+  dragState.shell.classList.remove('is-milestone-dragging');
+  dragState.shell.classList.remove('resize-start');
+  dragState.shell.classList.remove('resize-end');
+  dragState.shell.removeAttribute('aria-grabbed');
+  ganttPreview?.classList.remove('preview-is-dragging');
+  document.body.classList.remove('preview-task-dragging');
+  document.body.classList.remove('preview-task-resizing');
+  document.body.classList.remove('preview-milestone-dragging');
+  previewDragState = null;
+  return dragState;
+}
+
+function finishPreviewTaskDrag(event) {
+  if (!previewDragState || event.pointerId !== previewDragState.pointerId) return;
+  event.preventDefault();
+  const dragState = cleanupPreviewTaskDrag();
+  if (!dragState) return;
+  if ((dragState.mode || 'move') === 'move' && dragState.dayDelta) {
+    applyPreviewTaskDrag(dragState.phaseIndex, dragState.taskIndex, dragState.dayDelta);
+  } else if (dragState.mode === 'milestone'
+    && (dragState.currentStartOffset !== dragState.startDayOffset || dragState.currentEndOffset !== dragState.endDayOffset)) {
+    const { start, end } = getPreviewDragDates(dragState);
+    applyPreviewMilestoneDrag(dragState.phaseIndex, dragState.taskIndex, start, end);
+  } else if ((dragState.mode || 'move') !== 'move'
+    && (dragState.currentStartOffset !== dragState.startDayOffset || dragState.currentEndOffset !== dragState.endDayOffset)) {
+    const { start, end } = getPreviewDragDates(dragState);
+    applyPreviewTaskResize(dragState.phaseIndex, dragState.taskIndex, start, end);
+  } else {
+    dragState.shell.style.left = `${dragState.startLeftPx}px`;
+    dragState.shell.style.width = `${dragState.startWidthPx}px`;
+    if (dragState.fill) dragState.fill.style.width = `${dragState.startWidthPx}px`;
+    if (dragState.marker) dragState.marker.style.left = `${dragState.startMarkerLeftPx}px`;
+  }
+}
+
+function cancelPreviewTaskDrag(event) {
+  if (!previewDragState || event.pointerId !== previewDragState.pointerId) return;
+  const dragState = cleanupPreviewTaskDrag();
+  if (!dragState) return;
+  dragState.shell.style.left = `${dragState.startLeftPx}px`;
+  dragState.shell.style.width = `${dragState.startWidthPx}px`;
+  if (dragState.fill) dragState.fill.style.width = `${dragState.startWidthPx}px`;
+  if (dragState.marker) dragState.marker.style.left = `${dragState.startMarkerLeftPx}px`;
+}
+
+function startPreviewTaskDrag(event, shell, item, metrics, timeline, marker = null, markerGapPx = 0, mode = 'move') {
+  if (!previewEditMode || timeline.unit !== 'week' || item.kind !== 'sub' || event.button !== 0) return;
+  if (mode !== 'move' && mode !== 'milestone' && item.milestone) return;
+  if (mode === 'milestone' && !item.milestone) return;
+  if (!Number.isInteger(item.phaseIndex) || !Number.isInteger(item.taskIndex)) return;
+  const phase = state.phases[item.phaseIndex];
+  const task = phase?.tasks?.[item.taskIndex];
+  if (!phase || !task || !isIsoDate(task.start) || !isIsoDate(task.end)) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  cleanupPreviewTaskDrag();
+
+  const dragLabel = document.createElement('span');
+  dragLabel.className = 'preview-drag-label';
+  shell.append(dragLabel);
+
+  const startDayOffset = getPreviewDayOffset(task.start, timeline.projectStartValue);
+  const endDayOffset = startDayOffset + daysInclusiveIso(task.start, task.end);
+  const singleDayMilestone = Boolean(task.milestone) && daysInclusiveIso(task.start, task.end) === 1;
+  const captureElement = event.currentTarget instanceof HTMLElement ? event.currentTarget : shell;
+  previewDragState = {
+    mode,
+    pointerId: event.pointerId,
+    shell,
+    captureElement,
+    fill: shell.querySelector('.preview-bar-fill'),
+    marker,
+    markerGapPx,
+    phaseIndex: item.phaseIndex,
+    taskIndex: item.taskIndex,
+    projectStartValue: timeline.projectStartValue,
+    originalStart: task.start,
+    originalEnd: task.end,
+    startClientX: event.clientX,
+    startLeftPx: metrics.leftPx,
+    startWidthPx: metrics.barWidthPx,
+    startMarkerLeftPx: marker ? Number.parseFloat(marker.style.left) || 0 : 0,
+    startMarkerPointPx: getPreviewTimelinePx(endDayOffset, timeline.weekWidthsPx),
+    startDayOffset,
+    endDayOffset,
+    currentStartOffset: startDayOffset,
+    currentEndOffset: endDayOffset,
+    markerPointOffset: endDayOffset,
+    weekWidthsPx: [...(timeline.weekWidthsPx || [])],
+    singleDayMilestone,
+    dayDelta: 0,
+    dragLabel,
+  };
+
+  shell.classList.add(mode === 'move' ? 'is-dragging' : (mode === 'milestone' ? 'is-milestone-dragging' : 'is-resizing'));
+  shell.classList.toggle('resize-start', mode === 'resize-start');
+  shell.classList.toggle('resize-end', mode === 'resize-end');
+  shell.setAttribute('aria-grabbed', 'true');
+  ganttPreview?.classList.add('preview-is-dragging');
+  document.body.classList.toggle('preview-task-dragging', mode === 'move');
+  document.body.classList.toggle('preview-task-resizing', mode !== 'move' && mode !== 'milestone');
+  document.body.classList.toggle('preview-milestone-dragging', mode === 'milestone');
+  updatePreviewDragLabel(previewDragState);
+
+  try {
+    captureElement.setPointerCapture(event.pointerId);
+  } catch {
+    // Some browsers can skip capture when the pointer is already released.
+  }
+  captureElement.addEventListener('pointermove', updatePreviewTaskDrag);
+  captureElement.addEventListener('pointerup', finishPreviewTaskDrag);
+  captureElement.addEventListener('pointercancel', cancelPreviewTaskDrag);
 }
 
 function renderPreviewBar(track, item, timeline) {
@@ -1878,6 +2363,11 @@ function renderPreviewBar(track, item, timeline) {
   shell.className = 'preview-bar-shell';
   shell.style.left = `${leftPx}px`;
   shell.style.width = `${barWidthPx}px`;
+  if (item.kind === 'sub') {
+    shell.classList.add('preview-bar-task');
+    shell.dataset.phaseIndex = String(item.phaseIndex);
+    shell.dataset.taskIndex = String(item.taskIndex);
+  }
 
   const fill = document.createElement('span');
   fill.className = 'preview-bar-fill';
@@ -1885,13 +2375,45 @@ function renderPreviewBar(track, item, timeline) {
   fill.style.setProperty('--bar-color', color);
   fill.title = item.kind === 'sub' ? getTaskStatus(item) : `阶段完成度 ${normalizeProgress(item.progress)}%`;
   shell.append(fill);
+
+  let marker = null;
+  let markerGapPx = 0;
+  if (item.kind === 'sub' && !item.milestone) {
+    const startHandle = document.createElement('span');
+    startHandle.className = 'preview-resize-handle preview-resize-start';
+    startHandle.setAttribute('aria-hidden', 'true');
+    const endHandle = document.createElement('span');
+    endHandle.className = 'preview-resize-handle preview-resize-end';
+    endHandle.setAttribute('aria-hidden', 'true');
+    startHandle.addEventListener('pointerdown', (event) => startPreviewTaskDrag(
+      event,
+      shell,
+      item,
+      metrics,
+      timeline,
+      marker,
+      markerGapPx,
+      'resize-start',
+    ));
+    endHandle.addEventListener('pointerdown', (event) => startPreviewTaskDrag(
+      event,
+      shell,
+      item,
+      metrics,
+      timeline,
+      marker,
+      markerGapPx,
+      'resize-end',
+    ));
+    shell.append(startHandle, endHandle);
+  }
   track.append(shell);
 
   if (item.kind === 'sub' && item.milestone) {
     const defaultGapPx = PREVIEW_MILESTONE_BAR_TO_STAR_GAP;
-    const markerGapPx = Number.isFinite(item.markerGapPx) ? item.markerGapPx : defaultGapPx;
-    const marker = document.createElement('span');
-    marker.className = 'preview-milestone';
+    markerGapPx = Number.isFinite(item.markerGapPx) ? item.markerGapPx : defaultGapPx;
+    marker = document.createElement('span');
+    marker.className = 'preview-milestone preview-milestone-draggable';
     marker.style.left = `${(pointPx ?? leftPx + barWidthPx) + markerGapPx}px`;
     marker.style.gap = `${PREVIEW_MILESTONE_STAR_TO_TEXT_GAP}px`;
     const star = document.createElement('span');
@@ -1901,7 +2423,29 @@ function renderPreviewBar(track, item, timeline) {
     label.className = 'preview-milestone-label';
     label.textContent = `${item.name} (${fmtMd(item.end)})`;
     marker.append(star, label);
+    marker.addEventListener('pointerdown', (event) => startPreviewTaskDrag(
+      event,
+      shell,
+      item,
+      metrics,
+      timeline,
+      marker,
+      markerGapPx,
+      'milestone',
+    ));
     track.append(marker);
+  }
+
+  if (item.kind === 'sub') {
+    shell.addEventListener('pointerdown', (event) => startPreviewTaskDrag(
+      event,
+      shell,
+      item,
+      metrics,
+      timeline,
+      marker,
+      markerGapPx,
+    ));
   }
 }
 
@@ -1910,6 +2454,7 @@ function renderPreview() {
   if (!ganttPreview) return;
   ganttPreview.textContent = '';
   ganttPreview.dataset.timelineUnit = normalizeTimelineUnit(selectedTimelineUnit);
+  updatePreviewEditControls();
   if (!range) {
     ganttPreview.append(makePreviewCell('preview-empty', '请先录入项目阶段日期。'));
     return;
@@ -1919,12 +2464,16 @@ function renderPreview() {
   const { projectStartValue, projectEndValue, totalWeeks } = range;
   const rows = getPreviewRows();
   const monthColumns = unit === 'month' ? buildPreviewMonthColumns(projectStartValue, projectEndValue) : [];
+  const weekColumns = unit === 'week' ? buildPreviewWeekColumns(projectStartValue, totalWeeks) : [];
+  const weekWidthsPx = weekColumns.map((column) => column.widthPx);
   const timelineColumns = unit === 'month' ? monthColumns.length : totalWeeks;
   const timelineWidth = unit === 'month' ? PREVIEW_MONTH_WIDTH : PREVIEW_WEEK_WIDTH;
-  const timeline = { unit, projectStartValue, monthColumns };
+  const timeline = { unit, projectStartValue, monthColumns, weekWidthsPx };
 
   ganttPreview.style.setProperty('--week-width', `${timelineWidth}px`);
-  ganttPreview.style.gridTemplateColumns = `250px 160px repeat(${timelineColumns}, ${timelineWidth}px)`;
+  ganttPreview.style.gridTemplateColumns = unit === 'month'
+    ? `250px 160px repeat(${timelineColumns}, ${timelineWidth}px)`
+    : `250px 160px ${weekColumns.map((column) => `${column.widthPx}px`).join(' ')}`;
 
   ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '1 / 4'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '1 / 4'));
@@ -1955,8 +2504,9 @@ function renderPreview() {
     });
 
     for (let weekIndex = 1; weekIndex <= totalWeeks; weekIndex += 1) {
-      const weekStart = addDaysIso(projectStartValue, (weekIndex - 1) * 7);
-      const weekEnd = addDaysIso(weekStart, 6);
+      const weekColumn = weekColumns[weekIndex - 1];
+      const weekStart = weekColumn.start;
+      const weekEnd = weekColumn.end;
       const gridColumn = `${weekIndex + 2}`;
       ganttPreview.append(makePreviewCell('preview-week', `W${weekIndex}`, gridColumn, '2'));
       ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(weekStart)}-${fmtMd(weekEnd)}`, gridColumn, '3'));
@@ -2005,6 +2555,19 @@ function normalizePhaseDates(phase) {
   }
 }
 
+function getEarliestTaskStart(phase) {
+  return minIsoDate((Array.isArray(phase?.tasks) ? phase.tasks : []).map((task) => task.start));
+}
+
+function syncPhaseStartFromTasks(phase) {
+  const earliestTaskStart = getEarliestTaskStart(phase);
+  if (earliestTaskStart) {
+    phase.start = earliestTaskStart;
+  }
+  normalizePhaseDates(phase);
+  return earliestTaskStart;
+}
+
 function getDefaultTaskEnd(start, phase) {
   return clampIsoDate(addDaysIso(start, DEFAULT_TASK_DAYS), start, phase.end);
 }
@@ -2025,7 +2588,7 @@ function normalizeTaskDates(phase) {
   normalizePhaseDates(phase);
   phase.tasks.forEach((task) => {
     if (isIsoDate(task.start)) {
-      task.start = clampIsoDate(task.start, phase.start, phase.end);
+      task.start = clampIsoDate(task.start, '', phase.end);
     } else if (isIsoDate(phase.start)) {
       task.start = phase.start;
     }
@@ -2046,6 +2609,7 @@ function normalizeTaskDates(phase) {
       task.end = task.start;
     }
   });
+  syncPhaseStartFromTasks(phase);
   sortTasksByStart(phase);
 }
 
@@ -2141,6 +2705,10 @@ function render() {
         input.value = phase[field] || '';
         input.addEventListener('input', () => {
           phase[field] = input.value;
+          if (field === 'start') {
+            syncPhaseStartFromTasks(phase);
+            input.value = phase[field] || '';
+          }
           syncProjectStart();
           renderProjectStats();
           renderRightPane();
@@ -2191,37 +2759,42 @@ function render() {
             render();
           });
         } else if (field === 'start') {
-          input.min = phase.start || '';
+          input.min = '';
           input.max = phase.end || '';
           input.value = task.start || '';
           input.addEventListener('input', () => {
-            task.start = clampIsoDate(input.value, phase.start, phase.end);
+            task.start = clampIsoDate(input.value, '', phase.end);
             if (input.value !== task.start) input.value = task.start;
             if (task.endTouched === false) {
               task.end = getDefaultTaskEnd(task.start, phase);
             } else {
               task.end = clampIsoDate(task.end, task.start, phase.end);
             }
+            syncPhaseStartFromTasks(phase);
+            const phaseStartInput = phaseNode.querySelector('.phase-fields [data-field="start"]');
+            if (phaseStartInput) phaseStartInput.value = phase.start || '';
+            syncProjectStart();
             updateHolidayStat(taskNode, task);
             renderProjectStats();
             renderRightPane();
           });
           input.addEventListener('change', () => {
-            task.start = clampIsoDate(input.value, phase.start, phase.end);
+            task.start = clampIsoDate(input.value, '', phase.end);
             if (task.endTouched === false) {
               task.end = getDefaultTaskEnd(task.start, phase);
             } else {
               task.end = clampIsoDate(task.end, task.start, phase.end);
             }
+            syncPhaseStartFromTasks(phase);
             sortTasksByStart(phase);
             render();
           });
         } else if (field === 'end') {
-          input.min = maxIsoDate([phase.start, task.start]);
+          input.min = task.start || phase.start || '';
           input.max = phase.end || '';
           input.value = task.end || '';
           input.addEventListener('input', () => {
-            task.end = clampIsoDate(input.value, maxIsoDate([phase.start, task.start]), phase.end);
+            task.end = clampIsoDate(input.value, task.start || phase.start, phase.end);
             if (input.value !== task.end) input.value = task.end;
             task.endTouched = true;
             updateHolidayStat(taskNode, task);
@@ -2229,7 +2802,7 @@ function render() {
             renderRightPane();
           });
           input.addEventListener('change', () => {
-            task.end = clampIsoDate(input.value, maxIsoDate([phase.start, task.start]), phase.end);
+            task.end = clampIsoDate(input.value, task.start || phase.start, phase.end);
             task.endTouched = true;
             render();
           });
@@ -2579,6 +3152,8 @@ if (exportImageBtn) exportImageBtn.addEventListener('click', () => {
 // Gantt modal open/close
 function openGanttModal() {
   if (!ganttModal) return;
+  setPreviewEditMode(false, false);
+  clearPreviewRiskNotice();
   ganttModal.classList.add('open');
   ganttModal.setAttribute('aria-hidden', 'false');
   document.body.classList.add('gantt-modal-visible');
@@ -2587,6 +3162,9 @@ function openGanttModal() {
 }
 function closeGanttModal() {
   if (!ganttModal) return;
+  cleanupPreviewTaskDrag();
+  setPreviewEditMode(false, false);
+  clearPreviewRiskNotice();
   ganttModal.classList.remove('open');
   ganttModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('gantt-modal-visible');
@@ -2597,6 +3175,12 @@ timelineUnitButtons.forEach((button) => {
 updateTimelineUnitControls();
 
 if (previewGanttBtn) previewGanttBtn.addEventListener('click', openGanttModal);
+if (previewEditBtn) previewEditBtn.addEventListener('click', () => {
+  setPreviewEditMode(!previewEditMode);
+  if (previewEditMode) {
+    setStatus('已开启甘特图编辑，可拖动任务条调整排期。', 'ok');
+  }
+});
 if (ganttModal) {
   const modalCloseBtn = ganttModal.querySelector('.gantt-modal-close');
   if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeGanttModal);

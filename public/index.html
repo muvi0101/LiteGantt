@@ -308,6 +308,7 @@
           </div>
           <div class="gantt-modal-tools">
             <div class="preview-tools" aria-label="预览缩放控制">
+              <button id="previewEditBtn" class="preview-edit-btn" type="button" aria-pressed="false">编辑</button>
               <button id="fitPreviewBtn" class="zoom-btn active" type="button">全览</button>
               <button id="zoomOutBtn" class="zoom-icon-btn" type="button" aria-label="缩小">−</button>
               <input id="zoomSlider" class="zoom-slider" type="range" min="20" max="140" step="1" value="100" aria-label="预览缩放比例" />
@@ -318,6 +319,7 @@
           </div>
         </div>
         <div class="gantt-modal-body">
+          <div id="previewRiskNotice" class="preview-risk-notice" hidden></div>
           <div class="preview-scroll">
             <div id="previewCanvas" class="preview-canvas">
               <div id="ganttPreview" class="gantt-preview"></div>

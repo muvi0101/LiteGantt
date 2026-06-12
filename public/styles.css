@@ -3223,6 +3223,7 @@ body.save-version-open {
   box-shadow: var(--tight-shadow);
 }
 
+.preview-edit-btn,
 .zoom-btn,
 .zoom-icon-btn {
   height: 28px;
@@ -3234,11 +3235,13 @@ body.save-version-open {
   font-weight: 780;
 }
 
+.preview-edit-btn,
 .zoom-btn {
   min-width: 48px;
   padding: 0 10px;
 }
 
+.preview-edit-btn.active,
 .zoom-btn.active {
   background: var(--blue);
   color: #fff;
@@ -3254,6 +3257,7 @@ body.save-version-open {
 }
 
 .zoom-icon-btn:hover,
+.preview-edit-btn:not(.active):hover,
 .zoom-btn:not(.active):hover {
   background: rgba(0, 122, 255, 0.08);
   color: #0066d6;
@@ -3601,6 +3605,7 @@ body.save-version-open {
 
 .preview-scroll {
   min-height: 0;
+  grid-row: 2;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 13px;
@@ -3706,10 +3711,15 @@ body.save-version-open {
   display: grid;
   place-items: center;
   min-height: 34px;
+  padding: 0 6px;
   background: #e5ebf4;
   color: #334155;
   font-size: 15px;
   font-weight: 850;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
 }
 
 .preview-year-band {
@@ -3900,10 +3910,135 @@ body.save-version-open {
   border: 1px solid #dce4f0;
 }
 
+.gantt-preview.preview-edit-mode .preview-bar-task {
+  cursor: grab;
+  touch-action: none;
+}
+
+.gantt-preview.preview-edit-mode .preview-bar-task:hover {
+  border-color: rgba(0, 122, 255, 0.44);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
+}
+
+.gantt-preview.preview-edit-mode .preview-bar-task:hover .preview-bar-fill {
+  filter: saturate(1.08) brightness(1.02);
+}
+
+.preview-bar-task.is-dragging {
+  z-index: 8;
+  cursor: grabbing;
+  border-color: rgba(0, 122, 255, 0.62);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16), 0 0 0 3px rgba(0, 122, 255, 0.16);
+}
+
+.preview-bar-task.is-resizing {
+  z-index: 8;
+  cursor: ew-resize;
+  border-color: rgba(0, 122, 255, 0.62);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16), 0 0 0 3px rgba(0, 122, 255, 0.16);
+}
+
+.preview-bar-task.is-milestone-dragging {
+  z-index: 8;
+  cursor: grab;
+  border-color: rgba(255, 45, 85, 0.48);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16), 0 0 0 3px rgba(255, 45, 85, 0.14);
+}
+
+.preview-resize-handle {
+  position: absolute;
+  top: 50%;
+  z-index: 9;
+  width: 10px;
+  height: calc(100% + 8px);
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(226, 236, 249, 0.92));
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
+  cursor: ew-resize;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.preview-resize-start {
+  left: -5px;
+}
+
+.preview-resize-end {
+  right: -5px;
+}
+
+.gantt-preview.preview-edit-mode .preview-bar-task:hover .preview-resize-handle,
+.preview-bar-task.is-resizing .preview-resize-handle {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.preview-bar-task.is-resizing .preview-resize-handle {
+  transform: translateY(-50%) scaleY(1.08);
+}
+
+.preview-task-dragging,
+.preview-task-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.preview-task-resizing,
+.preview-task-resizing * {
+  cursor: ew-resize !important;
+  user-select: none;
+}
+
+.preview-milestone-dragging,
+.preview-milestone-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.preview-is-dragging {
+  transition: none;
+}
+
 .preview-bar-fill {
   left: 0;
   background: var(--bar-color, var(--blue));
   border: 1px solid var(--bar-color, var(--blue));
+}
+
+.preview-drag-label {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  z-index: 10;
+  min-width: max-content;
+  padding: 5px 8px;
+  border: 1px solid rgba(14, 78, 150, 0.22);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.96);
+  color: #0f3764;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  pointer-events: none;
+  transform: translateX(-50%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.preview-drag-label::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid rgba(14, 78, 150, 0.22);
+  border-bottom: 1px solid rgba(14, 78, 150, 0.22);
+  background: rgba(255, 255, 255, 0.96);
+  transform: translateX(-50%) rotate(45deg);
 }
 
 .preview-milestone {
@@ -3919,10 +4054,20 @@ body.save-version-open {
   transform: translateY(-50%);
 }
 
+.gantt-preview.preview-edit-mode .preview-milestone-draggable {
+  cursor: grab;
+}
+
+.gantt-preview.preview-edit-mode .preview-milestone-draggable:hover .preview-milestone-star {
+  filter: drop-shadow(0 0 6px rgba(255, 45, 85, 0.35));
+  transform: scale(1.08);
+}
+
 .preview-milestone-star {
   color: var(--red);
   font-size: 18px;
   line-height: 1;
+  transition: filter 0.14s ease, transform 0.14s ease;
 }
 
 .preview-milestone-label {
@@ -6251,8 +6396,47 @@ body.save-version-open {
 
 .gantt-modal-body {
   min-height: 0;
+  height: 100%;
   overflow: hidden;
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+}
+
+.preview-risk-notice {
+  grid-row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(90deg, rgba(255, 247, 237, 0.96), rgba(255, 251, 235, 0.9));
+  color: #92400e;
+  font-size: 12px;
+  font-weight: 820;
+  box-shadow: 0 8px 18px rgba(146, 64, 14, 0.08);
+}
+
+.preview-risk-notice[hidden] {
+  display: none;
+}
+
+.preview-risk-notice span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.preview-risk-notice[data-tone="ok"] {
+  border-color: rgba(22, 163, 74, 0.18);
+  background: linear-gradient(90deg, rgba(240, 253, 244, 0.96), rgba(236, 253, 245, 0.88));
+  color: #166534;
 }
 
 body.gantt-modal-visible {
