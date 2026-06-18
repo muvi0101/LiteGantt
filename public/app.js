@@ -62,6 +62,127 @@ const defaultProject = {
   ],
 };
 
+const projectTemplates = [
+  {
+    id: 'saas-delivery',
+    name: 'SaaS 实施交付',
+    title: 'SaaS 实施交付计划（周视图）',
+    summary: '适合标准企业 SaaS 实施，从项目准备、需求调研、蓝图设计到实施测试与上线支持。',
+    tags: ['项目准备', '蓝图设计', '上线支持'],
+    schedule: 'saas-delivery-relative',
+    durationLabel: '',
+    phases: [
+      {
+        name: '项目准备',
+        items: [
+          { name: '概念培训', workdays: 1 },
+          { name: '确认SOW', workdays: 2 },
+          { name: '组织结构与通讯录', workdays: 3 },
+          { name: '沟通管理计划', workdays: 1 },
+          { name: '变更管理计划', workdays: 1 },
+          { name: '项目进度计划', workdays: 1 },
+          { name: '项目启动会', milestone: true },
+        ],
+      },
+      {
+        name: '需求调研',
+        items: [
+          { name: '访谈准备', workdays: 2 },
+          { name: '需求访谈', workdays: 14 },
+          { name: '功能需求清单', workdays: 3 },
+          { name: '接口需求清单', workdays: 3 },
+        ],
+      },
+      {
+        name: '蓝图设计',
+        items: [
+          { name: '功能开发设计', workdays: 3 },
+          { name: '接口开发设计', workdays: 3 },
+          { name: '蓝图设计', workdays: 7 },
+          { name: '蓝图内部评审', workdays: 3 },
+          { name: '蓝图确认', workdays: 2, milestone: true },
+        ],
+      },
+      {
+        name: '实施测试',
+        items: [
+          { name: '基础数据收集', workdays: 5 },
+          { name: '功能开发', workdays: 20 },
+          { name: '接口开发', workdays: 20 },
+          { name: '单元测试', workdays: 6 },
+          { name: '集成测试', workdays: 5 },
+          { name: 'UAT测试', workdays: 20 },
+          { name: '上线切换准备', workdays: 14 },
+          { name: '用户培训', workdays: 3 },
+          { name: '上线切换', milestone: true },
+        ],
+      },
+      {
+        name: '上线支持',
+        items: [
+          { name: '上线后支持', workdays: 30 },
+          { name: '运维交接', workdays: 1 },
+          { name: '项目验收', workdays: 16 },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'software-development',
+    name: '软件开发项目',
+    title: '软件开发项目计划（周视图）',
+    summary: '适合 Web、移动端或内部系统开发，覆盖需求冻结、迭代开发、测试验收和发布。',
+    tags: ['需求冻结', '迭代开发', '发布上线'],
+    phases: [
+      {
+        name: '需求定义与范围冻结',
+        items: [
+          { name: '需求澄清与用户故事拆分', workdays: 3 },
+          { name: '原型与 PRD 确认', workdays: 4 },
+          { name: '技术方案与排期评审', workdays: 2 },
+          { name: '需求范围冻结', milestone: true },
+        ],
+      },
+      {
+        name: '迭代一开发',
+        items: [
+          { name: '开发环境与基础框架搭建', workdays: 3 },
+          { name: '核心模块开发', workdays: 7 },
+          { name: '自测与代码评审', workdays: 2 },
+          { name: '迭代一提测', milestone: true },
+        ],
+      },
+      {
+        name: '迭代二开发',
+        items: [
+          { name: '扩展模块与页面联动开发', workdays: 6 },
+          { name: '权限、数据与异常处理', workdays: 4 },
+          { name: '性能与兼容性处理', workdays: 2 },
+          { name: '功能开发完成', milestone: true },
+        ],
+      },
+      {
+        name: '测试修复与验收',
+        items: [
+          { name: '系统测试用例执行', workdays: 4 },
+          { name: '缺陷修复与回归测试', workdays: 5 },
+          { name: '验收场景走查', workdays: 2 },
+          { name: '验收通过', milestone: true },
+        ],
+      },
+      {
+        name: '发布上线',
+        items: [
+          { name: '发布清单与变更窗口确认', workdays: 1 },
+          { name: '灰度发布与生产验证', workdays: 2 },
+          { name: '监控、回滚预案与交接', workdays: 2 },
+          { name: '上线完成', milestone: true },
+        ],
+      },
+    ],
+  },
+];
+
 let state = structuredClone(defaultProject);
 
 const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
@@ -142,6 +263,15 @@ const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
 const clearBtn = document.querySelector('#clearBtn');
 const resetBtn = document.querySelector('#resetBtn');
+const templateLibraryBtn = document.querySelector('#templateLibraryBtn');
+const templateDialog = document.querySelector('#templateDialog');
+const templateBackdrop = document.querySelector('#templateBackdrop');
+const templateOptions = document.querySelector('#templateOptions');
+const templateStartInput = document.querySelector('#templateStartInput');
+const templateHint = document.querySelector('#templateHint');
+const applyTemplateBtn = document.querySelector('#applyTemplateBtn');
+const cancelTemplateBtn = document.querySelector('#cancelTemplateBtn');
+const closeTemplateDialogBtn = document.querySelector('#closeTemplateDialogBtn');
 const initMenu = document.querySelector('.init-menu');
 const initMenuBtn = document.querySelector('#initMenuBtn');
 const initMenuPanel = document.querySelector('#initMenuPanel');
@@ -187,6 +317,7 @@ let selectedTimelineUnit = 'week';
 let expandedPhaseIndexes = new Set();
 let focusedPhaseIndex = null;
 let focusPhaseTimer = null;
+let selectedTemplateId = projectTemplates[0]?.id || '';
 let introStepIndex = 0;
 let introStepTimer = null;
 let introSubtitleIndex = 0;
@@ -827,6 +958,108 @@ function toggleInitMenu() {
   initMenuBtn.setAttribute('aria-expanded', String(isOpen));
 }
 
+function getSelectedTemplate() {
+  return projectTemplates.find((template) => template.id === selectedTemplateId) || projectTemplates[0] || null;
+}
+
+function setTemplateHint(message = '应用模板会替换当前计划，建议先保存版本。', stateName = '') {
+  if (!templateHint) return;
+  templateHint.textContent = message;
+  if (stateName) {
+    templateHint.dataset.state = stateName;
+  } else {
+    delete templateHint.dataset.state;
+  }
+}
+
+function renderTemplateOptions() {
+  if (!templateOptions) return;
+  templateOptions.textContent = '';
+  projectTemplates.forEach((template) => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'template-option';
+    option.dataset.templateId = template.id;
+    option.setAttribute('aria-pressed', String(template.id === selectedTemplateId));
+    option.classList.toggle('active', template.id === selectedTemplateId);
+
+    const tags = document.createElement('div');
+    tags.className = 'template-tags';
+    template.tags.forEach((tag) => tags.append(makeElement('span', '', tag)));
+
+    const phaseListNode = document.createElement('div');
+    phaseListNode.className = 'template-phase-strip';
+    template.phases.slice(0, 5).forEach((phase) => {
+      phaseListNode.append(makeElement('span', '', phase.name));
+    });
+
+    option.append(
+      makeElement('strong', 'template-option-title', template.name),
+      makeElement('span', 'template-option-summary', template.summary),
+      tags,
+      phaseListNode,
+      makeElement(
+        'small',
+        'template-option-meta',
+        getTemplateMetaText(template),
+      ),
+    );
+
+    option.addEventListener('click', () => {
+      selectedTemplateId = template.id;
+      renderTemplateOptions();
+      setTemplateHint(`已选择「${template.name}」，确认后会替换当前计划。`);
+    });
+
+    templateOptions.append(option);
+  });
+}
+
+function openTemplateDialog() {
+  if (!templateDialog) return;
+  closeInitMenu();
+  if (!getSelectedTemplate()) selectedTemplateId = projectTemplates[0]?.id || '';
+  if (templateStartInput && !isIsoDate(templateStartInput.value)) {
+    templateStartInput.value = todayIsoDate();
+  }
+  renderTemplateOptions();
+  setTemplateHint();
+  templateDialog.classList.add('open');
+  templateDialog.setAttribute('aria-hidden', 'false');
+  document.body.classList.add('template-dialog-open');
+  window.setTimeout(() => templateStartInput?.focus(), 0);
+}
+
+function closeTemplateDialog() {
+  if (!templateDialog) return;
+  templateDialog.classList.remove('open');
+  templateDialog.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('template-dialog-open');
+}
+
+function applySelectedTemplate() {
+  const template = getSelectedTemplate();
+  const projectStart = templateStartInput?.value || '';
+  if (!template) {
+    setTemplateHint('当前没有可用模板。', 'error');
+    return;
+  }
+  if (!isIsoDate(projectStart)) {
+    setTemplateHint('请先填写有效的项目开始日期。', 'error');
+    templateStartInput?.focus();
+    return;
+  }
+
+  try {
+    const project = buildProjectFromTemplate(template, projectStart);
+    applyImportedProject(project);
+    closeTemplateDialog();
+    setStatus(`已应用「${template.name}」模板，生成 ${project.phases.length} 个阶段、${getProjectTaskCount(project)} 项任务。`, 'ok');
+  } catch (error) {
+    setTemplateHint(error instanceof Error ? error.message : String(error), 'error');
+  }
+}
+
 function apiUrl(path) {
   return `${API_BASE}${path}`;
 }
@@ -1005,6 +1238,224 @@ function clampIsoDate(value, min, max) {
   if (isIsoDate(min) && compareIsoDates(result, min) < 0) result = min;
   if (isIsoDate(max) && compareIsoDates(result, max) > 0) result = max;
   return result;
+}
+
+function todayIsoDate() {
+  const now = new Date();
+  const timezoneOffsetMs = now.getTimezoneOffset() * 60000;
+  return new Date(now.getTime() - timezoneOffsetMs).toISOString().slice(0, 10);
+}
+
+function isWorkingDay(value) {
+  return isIsoDate(value) && !getHolidayMeta(value);
+}
+
+function nextWorkingDayIso(value) {
+  if (!isIsoDate(value)) return '';
+  let cursor = value;
+  let guard = 0;
+  while (!isWorkingDay(cursor) && guard < 30) {
+    cursor = addDaysIso(cursor, 1);
+    guard += 1;
+  }
+  return cursor;
+}
+
+function previousWorkingDayIso(value) {
+  if (!isIsoDate(value)) return '';
+  let cursor = value;
+  let guard = 0;
+  while (!isWorkingDay(cursor) && guard < 30) {
+    cursor = addDaysIso(cursor, -1);
+    guard += 1;
+  }
+  return cursor;
+}
+
+function addWorkingDaysIso(value, workdayCount) {
+  if (!isIsoDate(value)) return '';
+  const targetDays = Math.max(1, Math.round(Number(workdayCount) || 1));
+  let cursor = nextWorkingDayIso(value);
+  let counted = cursor ? 1 : 0;
+  let guard = 0;
+  while (cursor && counted < targetDays && guard < 500) {
+    cursor = addDaysIso(cursor, 1);
+    if (isWorkingDay(cursor)) counted += 1;
+    guard += 1;
+  }
+  return cursor;
+}
+
+function shiftWorkingDaysIso(value, offset) {
+  if (!isIsoDate(value)) return '';
+  const steps = Math.round(Number(offset) || 0);
+  if (steps === 0) return nextWorkingDayIso(value);
+
+  if (steps > 0) {
+    let cursor = nextWorkingDayIso(value);
+    for (let index = 0; index < steps; index += 1) {
+      cursor = nextWorkingDayIso(addDaysIso(cursor, 1));
+    }
+    return cursor;
+  }
+
+  let cursor = previousWorkingDayIso(addDaysIso(nextWorkingDayIso(value), -1));
+  for (let index = -1; index > steps; index -= 1) {
+    cursor = previousWorkingDayIso(addDaysIso(cursor, -1));
+  }
+  return cursor;
+}
+
+function makeTemplateTask(name, start, end = start, milestone = false) {
+  return {
+    name,
+    start,
+    end,
+    status: '未开始',
+    progress: 0,
+    milestone: Boolean(milestone),
+  };
+}
+
+function makeTemplateWindowTask(name, anchorDate, startOffset, endOffset, milestone = false) {
+  return makeTemplateTask(
+    name,
+    shiftWorkingDaysIso(anchorDate, startOffset),
+    shiftWorkingDaysIso(anchorDate, endOffset),
+    milestone,
+  );
+}
+
+function getTemplateWorkdayCount(template) {
+  return template.phases.reduce((sum, phase) => {
+    return sum + phase.items.reduce((phaseSum, item) => {
+      return phaseSum + (item.milestone ? 1 : Math.max(1, Math.round(Number(item.workdays) || 1)));
+    }, 0);
+  }, 0);
+}
+
+function getTemplateTaskCount(template) {
+  return template.phases.reduce((sum, phase) => sum + phase.items.length, 0);
+}
+
+function getTemplateMetaText(template) {
+  const baseText = `${template.phases.length} 个阶段 · ${getTemplateTaskCount(template)} 项任务`;
+  if (template.durationLabel === '') return baseText;
+  return `${baseText} · ${template.durationLabel || `约 ${getTemplateWorkdayCount(template)} 个工作日`}`;
+}
+
+function makeTemplatePhase(name, tasks) {
+  return {
+    name,
+    start: minIsoDate(tasks.map((task) => task.start)),
+    end: maxIsoDate(tasks.map((task) => task.end || task.start)),
+    tasks,
+  };
+}
+
+function buildSaasDeliveryProjectFromTemplate(template, projectStart) {
+  const kickoffStart = nextWorkingDayIso(projectStart);
+  if (!kickoffStart) throw new Error('请选择有效的项目启动日期');
+
+  const projectPrepTasks = [
+    makeTemplateWindowTask('概念培训', kickoffStart, 0, 0),
+    makeTemplateWindowTask('确认SOW', kickoffStart, 0, 1),
+    makeTemplateWindowTask('组织结构与通讯录', kickoffStart, 0, 2),
+    makeTemplateWindowTask('沟通管理计划', kickoffStart, 0, 2),
+    makeTemplateWindowTask('变更管理计划', kickoffStart, 0, 2),
+    makeTemplateWindowTask('项目进度计划', kickoffStart, 0, 2),
+    makeTemplateWindowTask('项目启动会', kickoffStart, 3, 4, true),
+  ];
+  const kickoffEnd = projectPrepTasks[projectPrepTasks.length - 1].end;
+
+  const interviewPrepare = makeTemplateWindowTask('访谈准备', kickoffEnd, 1, 2);
+  const requirementInterview = makeTemplateWindowTask('需求访谈', interviewPrepare.end, 1, 14);
+  const requirementResearchTasks = [
+    interviewPrepare,
+    requirementInterview,
+    makeTemplateWindowTask('功能需求清单', interviewPrepare.end, 10, 17),
+    makeTemplateWindowTask('接口需求清单', interviewPrepare.end, 10, 17),
+  ];
+  const requirementResearchEnd = maxIsoDate(requirementResearchTasks.map((task) => task.end));
+
+  const blueprintDesign = makeTemplateWindowTask('蓝图设计', requirementResearchEnd, 1, 7);
+  const blueprintReview = makeTemplateWindowTask('蓝图内部评审', blueprintDesign.end, 1, 3);
+  const blueprintConfirm = makeTemplateWindowTask('蓝图确认', blueprintReview.end, 1, 2, true);
+  const blueprintTasks = [
+    makeTemplateWindowTask('功能开发设计', requirementResearchEnd, 1, 3),
+    makeTemplateWindowTask('接口开发设计', requirementResearchEnd, 1, 3),
+    blueprintDesign,
+    blueprintReview,
+    blueprintConfirm,
+  ];
+  const blueprintConfirmEnd = blueprintConfirm.end;
+
+  const uatTest = makeTemplateWindowTask('UAT测试', blueprintConfirmEnd, 26, 45);
+  const goLive = makeTemplateWindowTask('上线切换', uatTest.end, 15, 15, true);
+  const implementationTasks = [
+    makeTemplateWindowTask('基础数据收集', blueprintConfirmEnd, 1, 5),
+    makeTemplateWindowTask('功能开发', blueprintConfirmEnd, 1, 20),
+    makeTemplateWindowTask('接口开发', blueprintConfirmEnd, 1, 20),
+    makeTemplateWindowTask('单元测试', blueprintConfirmEnd, 15, 20),
+    makeTemplateWindowTask('集成测试', blueprintConfirmEnd, 21, 25),
+    uatTest,
+    makeTemplateWindowTask('上线切换准备', uatTest.end, 1, 14),
+    makeTemplateWindowTask('用户培训', uatTest.end, 12, 14),
+    goLive,
+  ];
+
+  const goLiveEnd = goLive.end;
+  const supportTasks = [
+    makeTemplateWindowTask('上线后支持', goLiveEnd, 1, 30),
+    makeTemplateWindowTask('运维交接', goLiveEnd, 30, 30),
+    makeTemplateWindowTask('项目验收', goLiveEnd, 30, 45),
+  ];
+
+  return {
+    title: template.title || DEFAULT_TITLE,
+    projectStart: kickoffStart,
+    phases: [
+      makeTemplatePhase('项目准备', projectPrepTasks),
+      makeTemplatePhase('需求调研', requirementResearchTasks),
+      makeTemplatePhase('蓝图设计', blueprintTasks),
+      makeTemplatePhase('实施测试', implementationTasks),
+      makeTemplatePhase('上线支持', supportTasks),
+    ],
+  };
+}
+
+function buildProjectFromTemplate(template, projectStart) {
+  const safeStart = nextWorkingDayIso(projectStart);
+  if (!template || !safeStart) throw new Error('请选择模板并填写有效的项目开始日期');
+
+  if (template.schedule === 'saas-delivery-relative') {
+    return buildSaasDeliveryProjectFromTemplate(template, safeStart);
+  }
+
+  let cursor = safeStart;
+  const phases = template.phases.map((phaseTemplateItem) => {
+    const tasks = phaseTemplateItem.items.map((item) => {
+      const start = nextWorkingDayIso(cursor);
+      const end = item.milestone ? start : addWorkingDaysIso(start, item.workdays);
+      cursor = nextWorkingDayIso(addDaysIso(end, 1));
+      return {
+        name: item.name,
+        start,
+        end,
+        status: '未开始',
+        progress: 0,
+        milestone: Boolean(item.milestone),
+      };
+    });
+
+    return makeTemplatePhase(phaseTemplateItem.name, tasks);
+  });
+
+  return {
+    title: template.title || DEFAULT_TITLE,
+    projectStart: safeStart,
+    phases,
+  };
 }
 
 function sortTasksByStart(phase) {
@@ -3094,6 +3545,21 @@ if (resetBtn) resetBtn.addEventListener('click', () => {
   setStatus('已恢复示例数据。');
 });
 
+if (templateLibraryBtn) templateLibraryBtn.addEventListener('click', openTemplateDialog);
+if (templateBackdrop) templateBackdrop.addEventListener('click', closeTemplateDialog);
+if (cancelTemplateBtn) cancelTemplateBtn.addEventListener('click', closeTemplateDialog);
+if (closeTemplateDialogBtn) closeTemplateDialogBtn.addEventListener('click', closeTemplateDialog);
+if (applyTemplateBtn) applyTemplateBtn.addEventListener('click', applySelectedTemplate);
+if (templateStartInput) {
+  templateStartInput.addEventListener('input', () => setTemplateHint());
+  templateStartInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applySelectedTemplate();
+    }
+  });
+}
+
 if (initMenuBtn) initMenuBtn.addEventListener('click', (event) => {
   event.stopPropagation();
   toggleInitMenu();
@@ -3192,6 +3658,7 @@ document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
     if (initMenu && initMenu.classList.contains('open')) closeInitMenu();
     else if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
+    else if (templateDialog && templateDialog.classList.contains('open')) closeTemplateDialog();
     else if (saveVersionDialog && saveVersionDialog.classList.contains('open')) closeSaveVersionDialog();
     else if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
     else if (ganttModal && ganttModal.classList.contains('open')) closeGanttModal();

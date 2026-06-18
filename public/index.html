@@ -238,6 +238,7 @@
                   <small aria-hidden="true">▼</small>
                 </button>
                 <div id="initMenuPanel" class="init-menu-panel" role="menu">
+                  <button id="templateLibraryBtn" class="init-menu-item" type="button" role="menuitem">从模板创建</button>
                   <button id="resetBtn" class="init-menu-item" type="button" role="menuitem">恢复示例</button>
                   <button id="clearBtn" class="init-menu-item danger" type="button" role="menuitem">清空当前计划</button>
                 </div>
@@ -330,6 +331,28 @@
     </div>
 
     <div id="versionHistoryBackdrop" class="version-history-backdrop" aria-hidden="true"></div>
+    <div id="templateDialog" class="template-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="templateDialogTitle">
+      <div id="templateBackdrop" class="template-backdrop" aria-hidden="true"></div>
+      <div class="template-card">
+        <div class="template-head">
+          <div>
+            <span class="eyebrow">Project Templates</span>
+            <h2 id="templateDialogTitle">从模板创建计划</h2>
+          </div>
+          <button id="closeTemplateDialogBtn" class="icon-btn" type="button" aria-label="关闭模板库">×</button>
+        </div>
+        <div id="templateOptions" class="template-options" aria-label="项目模板列表"></div>
+        <label class="template-start-field">
+          <span>项目开始日期</span>
+          <input id="templateStartInput" type="date" />
+        </label>
+        <p id="templateHint" class="template-hint">应用模板会替换当前计划，建议先保存版本。</p>
+        <div class="template-actions">
+          <button id="cancelTemplateBtn" class="template-cancel" type="button">取消</button>
+          <button id="applyTemplateBtn" class="version-save-btn" type="button">应用模板</button>
+        </div>
+      </div>
+    </div>
     <div id="saveVersionDialog" class="save-version-dialog" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="saveVersionDialogTitle">
       <div id="saveVersionBackdrop" class="save-version-backdrop" aria-hidden="true"></div>
       <div class="save-version-card">
