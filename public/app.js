@@ -557,6 +557,7 @@ function saveBreakdown(collapse = false) {
       ensureSubtaskDefaults(subtask, task);
       normalizeSubtaskDates(subtask, task);
     });
+    syncTaskCompletionFromSubtasks(task);
   }
   if (collapse) breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
   render();
@@ -667,6 +668,10 @@ function bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex) {
       }
       if (field === 'status') {
         row.style.setProperty('--status-color', subtaskStatusColors[input.value] || '#64748b');
+        if (syncTaskCompletionFromSubtasks(task)) {
+          render();
+          return;
+        }
       }
       if (field === 'priority') {
         row.style.setProperty('--priority-color', subtaskPriorityColors[input.value] || '#64748b');
@@ -1536,6 +1541,29 @@ function getTaskBreakdownProgress(task) {
   if (!subtasks.length) return null;
   const completedCount = subtasks.filter((subtask) => subtask.status === '已完成').length;
   return Math.round((completedCount / subtasks.length) * 100);
+}
+
+function areAllSubtasksCompleted(task) {
+  const subtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
+  return subtasks.length > 0 && subtasks.every((subtask) => subtask.status === '已完成');
+}
+
+function getIncompleteTaskStatusFromSubtasks(task) {
+  const subtasks = Array.isArray(task?.subtasks) ? task.subtasks : [];
+  const hasActiveSubtask = subtasks.some((subtask) => ['已完成', '进行中'].includes(subtask.status));
+  return hasActiveSubtask ? '进行中' : '未开始';
+}
+
+function syncTaskCompletionFromSubtasks(task) {
+  const nextStatus = areAllSubtasksCompleted(task)
+    ? '已完成'
+    : getTaskStatus(task) === '已完成'
+      ? getIncompleteTaskStatusFromSubtasks(task)
+      : null;
+  if (!nextStatus || getTaskStatus(task) === nextStatus) return false;
+  task.status = nextStatus;
+  task.progress = defaultProgressForStatus(nextStatus);
+  return true;
 }
 
 function normalizeTaskProgress(task) {
@@ -3198,6 +3226,7 @@ function render() {
       const taskBreakdownOpen = isBreakdownOpen(phaseIndex, taskIndex);
       taskNode.classList.toggle('task-row-breakdown-open', taskBreakdownOpen);
       updateHolidayStat(taskNode, task);
+      syncTaskCompletionFromSubtasks(task);
       const computedStatus = getTaskStatus(task);
       task.status = computedStatus;
       task.progress = normalizeTaskProgress(task);
