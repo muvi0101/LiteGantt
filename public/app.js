@@ -107,6 +107,7 @@ const projectTemplates = [
         name: '实施测试',
         items: [
           { name: '基础数据收集', workdays: 5 },
+          { name: '系统配置', workdays: 6 },
           { name: '功能开发', workdays: 20 },
           { name: '接口开发', workdays: 20 },
           { name: '单元测试', workdays: 6 },
@@ -1399,6 +1400,7 @@ function buildSaasDeliveryProjectFromTemplate(template, projectStart) {
   const goLive = makeTemplateWindowTask('上线切换', uatTest.end, 15, 15, true);
   const implementationTasks = [
     makeTemplateWindowTask('基础数据收集', blueprintConfirmEnd, 1, 5),
+    makeTemplateWindowTask('系统配置', blueprintConfirmEnd, 1, 6),
     makeTemplateWindowTask('功能开发', blueprintConfirmEnd, 1, 20),
     makeTemplateWindowTask('接口开发', blueprintConfirmEnd, 1, 20),
     makeTemplateWindowTask('单元测试', blueprintConfirmEnd, 15, 20),
