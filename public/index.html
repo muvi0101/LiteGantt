@@ -7,10 +7,252 @@
     <meta name="copyright" content="Original Work · Internal Use Only · Written Authorization Required" />
     <meta name="code-fingerprint" content="Caius|Project Gantt Builder|2026|CGFB-2026-N7Q4-X1K8|ORIGINAL-WORK|INTERNAL-USE-ONLY" />
     <title>项目甘特图生成器</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23e8f4ff'/%3E%3Ccircle cx='20' cy='24' r='8' fill='%2314b8a6'/%3E%3Cpath d='M32 20h18v8H32zM14 38h36v8H14z' fill='%23007aff'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
-  <body class="intro-active">
+  <body class="home-active">
     <div class="code-fingerprint" aria-hidden="true" hidden data-author="Caius" data-project="Project Gantt Builder" data-fingerprint="CGFB-2026-N7Q4-X1K8" data-rights="ORIGINAL-WORK|INTERNAL-USE-ONLY"></div>
+
+    <section id="homeScreen" class="home-screen" aria-label="LiteGantt 首页">
+      <header class="home-topbar">
+        <div class="home-brand">
+          <span class="home-logo-mark" aria-hidden="true"></span>
+          <strong>LiteGantt</strong>
+        </div>
+      </header>
+
+      <main class="home-shell">
+        <section class="home-hero" aria-label="产品定位">
+          <div class="home-hero-copy">
+            <h1>LiteGantt</h1>
+            <h2>轻量级甘特图生成器</h2>
+            <p>选择项目场景，生成可编辑计划</p>
+          </div>
+          <div class="home-hero-visual" aria-hidden="true">
+            <div class="home-visual-platform">
+              <div class="home-visual-board">
+                <span></span>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+              </div>
+              <b class="home-visual-icon home-visual-calendar"></b>
+              <b class="home-visual-icon home-visual-excel"></b>
+              <b class="home-visual-icon home-visual-cloud"></b>
+              <em></em>
+              <em></em>
+            </div>
+          </div>
+        </section>
+
+        <section class="home-template-zone" aria-label="项目场景">
+          <div class="home-template-head">
+            <div>
+              <h2>选择项目场景</h2>
+              <p>基于最佳实践模板，快速生成专业项目计划</p>
+            </div>
+          </div>
+          <button class="home-template-card home-template-primary home-template-active" type="button" data-home-template="saas-delivery">
+            <span class="home-template-icon home-icon-saas" aria-hidden="true"></span>
+            <strong>SaaS 实施交付</strong>
+            <small>覆盖售前、实施、上线到运维的完整 SaaS 实施交付流程</small>
+            <span class="home-card-chips">
+              <i>阶段模板</i>
+              <i>节假日排除</i>
+              <i>里程碑</i>
+              <i>4K导出</i>
+            </span>
+            <em>进入配置 <b>›</b></em>
+          </button>
+          <button class="home-template-card" type="button" data-home-template="software-development">
+            <span class="home-template-icon home-icon-dev" aria-hidden="true"></span>
+            <strong>软件开发项目</strong>
+            <small>适用于敏捷/瀑布开发，包含需求、设计、开发、测试、发布全流程</small>
+            <span class="home-card-chips">
+              <i>阶段模板</i>
+              <i>节假日排除</i>
+              <i>里程碑</i>
+              <i>4K导出</i>
+            </span>
+            <em>进入配置 <b>›</b></em>
+          </button>
+          <button id="homeBlankBtn" class="home-template-card home-utility-card" type="button">
+            <span class="home-template-icon home-icon-blank" aria-hidden="true"></span>
+            <strong>空白计划</strong>
+            <small>从零开始创建计划，灵活定义阶段与任务结构</small>
+            <span class="home-card-chips">
+              <i>阶段模板</i>
+              <i>节假日排除</i>
+              <i>里程碑</i>
+              <i>4K导出</i>
+            </span>
+            <em>进入配置 <b>›</b></em>
+          </button>
+          <button id="homeExcelCardBtn" class="home-template-card home-utility-card" type="button">
+            <span class="home-template-icon home-icon-excel" aria-hidden="true"></span>
+            <strong>导入 Excel</strong>
+            <small>基于 Excel 数据快速生成甘特图，自动映射任务与时间</small>
+            <span class="home-card-chips">
+              <i>阶段模板</i>
+              <i>节假日排除</i>
+              <i>里程碑</i>
+              <i>4K导出</i>
+            </span>
+            <em>进入配置 <b>›</b></em>
+          </button>
+        </section>
+
+        <aside class="home-preview" aria-label="预览示意">
+          <div class="home-preview-head">
+            <strong>计划预览（示例）</strong>
+          </div>
+          <div class="home-preview-board" aria-hidden="true">
+            <div class="home-preview-axis">
+              <div class="home-preview-months">
+                <span>2026年9月</span>
+                <span>2026年10月</span>
+              </div>
+              <div class="home-preview-weeks">
+                <span>W36<small>9/1-9/7</small></span>
+                <span>W37<small>9/8-9/14</small></span>
+                <span>W38<small>9/15-9/21</small></span>
+                <span>W39<small>9/22-9/28</small></span>
+                <span>W40<small>9/29-10/5</small></span>
+                <span>W41<small>10/6-10/12</small></span>
+                <span>W42<small>10/13-10/19</small></span>
+                <span>W43<small>10/20-10/26</small></span>
+              </div>
+            </div>
+            <div class="home-preview-table">
+              <span class="preview-stage stage-blue" style="--row: 1">项目准备</span>
+              <span class="preview-task" style="--row: 2">概念培训</span>
+              <b class="preview-bar blue" style="--row: 2; --col: 2; --span: 2"></b>
+              <span class="preview-task" style="--row: 3">组织结构与通讯录</span>
+              <b class="preview-bar blue" style="--row: 3; --col: 3; --span: 2"></b>
+              <span class="preview-task" style="--row: 4">项目启动会</span>
+              <i class="preview-diamond" style="--row: 4; --col: 5"></i>
+
+              <span class="preview-stage stage-teal" style="--row: 5">需求调研</span>
+              <span class="preview-task" style="--row: 6">访谈准备</span>
+              <b class="preview-bar teal" style="--row: 6; --col: 3; --span: 2"></b>
+              <span class="preview-task" style="--row: 7">需求访谈</span>
+              <b class="preview-bar teal" style="--row: 7; --col: 4; --span: 3"></b>
+              <span class="preview-task" style="--row: 8">功能需求清单</span>
+              <b class="preview-bar teal" style="--row: 8; --col: 6; --span: 2"></b>
+              <span class="preview-task" style="--row: 9">接口需求清单</span>
+              <b class="preview-bar teal" style="--row: 9; --col: 6; --span: 2"></b>
+
+              <span class="preview-stage stage-cyan" style="--row: 10">蓝图设计</span>
+              <span class="preview-task" style="--row: 11">功能开发设计</span>
+              <b class="preview-bar cyan" style="--row: 11; --col: 3; --span: 2"></b>
+              <span class="preview-task" style="--row: 12">接口开发设计</span>
+              <b class="preview-bar cyan" style="--row: 12; --col: 4; --span: 2"></b>
+              <span class="preview-task" style="--row: 13">蓝图设计</span>
+              <b class="preview-bar cyan" style="--row: 13; --col: 5; --span: 2"></b>
+              <span class="preview-task" style="--row: 14">蓝图确认</span>
+              <i class="preview-diamond" style="--row: 14; --col: 7"></i>
+
+              <span class="preview-stage stage-violet" style="--row: 15">实施测试</span>
+              <span class="preview-task" style="--row: 16">系统配置</span>
+              <b class="preview-bar violet" style="--row: 16; --col: 5; --span: 2"></b>
+              <span class="preview-task" style="--row: 17">单元测试</span>
+              <b class="preview-bar violet" style="--row: 17; --col: 6; --span: 1"></b>
+              <span class="preview-task" style="--row: 18">集成测试</span>
+              <b class="preview-bar violet" style="--row: 18; --col: 6; --span: 2"></b>
+              <span class="preview-task" style="--row: 19">UAT测试</span>
+              <b class="preview-bar violet" style="--row: 19; --col: 6; --span: 2"></b>
+
+              <span class="preview-stage stage-amber" style="--row: 20">上线支持</span>
+              <span class="preview-task" style="--row: 21">上线切换</span>
+              <b class="preview-bar amber" style="--row: 21; --col: 7; --span: 2"></b>
+              <span class="preview-task" style="--row: 22">上线后支持</span>
+              <b class="preview-bar amber" style="--row: 22; --col: 7; --span: 2"></b>
+              <span class="preview-task" style="--row: 23">项目验收</span>
+              <i class="preview-diamond" style="--row: 23; --col: 9"></i>
+            </div>
+          </div>
+          <div class="home-preview-note">
+            <span aria-hidden="true">i</span>
+            <p>此为模板示例，实际计划将根据您的配置生成</p>
+          </div>
+        </aside>
+      </main>
+
+      <footer class="home-process" aria-label="使用流程">
+        <div class="home-process-step">
+          <span class="process-illustration process-template" aria-hidden="true"></span>
+          <span class="process-copy">
+            <span class="process-title"><b>1</b><strong>选择模板</strong></span>
+            <small>选择适合的项目场景模板</small>
+          </span>
+        </div>
+        <i></i>
+        <div class="home-process-step">
+          <span class="process-illustration process-config" aria-hidden="true"></span>
+          <span class="process-copy">
+            <span class="process-title"><b>2</b><strong>配置参数</strong></span>
+            <small>设置项目基本信息与选项</small>
+          </span>
+        </div>
+        <i></i>
+        <div class="home-process-step">
+          <span class="process-illustration process-generate" aria-hidden="true"></span>
+          <span class="process-copy">
+            <span class="process-title"><b>3</b><strong>生成计划</strong></span>
+            <small>自动生成甘特图计划</small>
+          </span>
+        </div>
+        <i></i>
+        <div class="home-process-step">
+          <span class="process-illustration process-edit" aria-hidden="true"></span>
+          <span class="process-copy">
+            <span class="process-title"><b>4</b><strong>编辑甘特图</strong></span>
+            <small>进入编辑器进行调整与优化</small>
+          </span>
+        </div>
+      </footer>
+    </section>
+
+    <section id="templateSetupScreen" class="template-setup-screen" aria-label="模板配置" aria-hidden="true" hidden>
+      <div class="setup-shell">
+        <header class="setup-head">
+          <button id="setupBackBtn" class="setup-back-btn" type="button">返回首页</button>
+          <div>
+            <span class="eyebrow">Template Setup</span>
+            <h1 id="setupTitle">配置项目模板</h1>
+            <p id="setupSummary">确认项目基本信息后生成计划。</p>
+          </div>
+        </header>
+
+        <main class="setup-grid">
+          <section class="setup-form-card" aria-label="项目参数">
+            <label>
+              <span>项目名称</span>
+              <input id="setupProjectNameInput" type="text" maxlength="48" />
+            </label>
+            <label>
+              <span>项目开始日期</span>
+              <input id="setupProjectStartInput" type="date" />
+            </label>
+            <p id="setupHint" class="setup-hint">模板会根据开始日期自动避开周末和节假日。</p>
+            <div class="setup-actions">
+              <button id="setupCancelBtn" class="setup-secondary-btn" type="button">取消</button>
+              <button id="setupGenerateBtn" class="setup-primary-btn" type="button">生成计划</button>
+            </div>
+          </section>
+
+          <aside class="setup-preview-card" aria-label="模板结构预览">
+            <div class="setup-preview-head">
+              <span id="setupTemplateMeta">5 个阶段</span>
+              <strong id="setupTemplateName">SaaS 实施交付</strong>
+            </div>
+            <div id="setupPhasePreview" class="setup-phase-preview"></div>
+          </aside>
+        </main>
+      </div>
+    </section>
+
     <section id="introScreen" class="intro-screen" aria-label="LiteGantt 功能介绍" data-step="0">
       <div class="intro-ambient" aria-hidden="true">
         <span></span>
@@ -177,7 +419,7 @@
       </div>
     </section>
 
-    <div id="appShell" class="app-shell" aria-hidden="true">
+    <div id="appShell" class="app-shell" aria-hidden="true" hidden>
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-block">
@@ -215,7 +457,6 @@
               <button id="exportImageBtn" class="io-menu-item" type="button" role="menuitem">导出图片</button>
             </div>
           </div>
-          <input id="importExcelInput" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
         </div>
       </div>
     </header>
@@ -297,6 +538,7 @@
       </div>
     </footer>
     </div>
+    <input id="importExcelInput" class="file-input" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
 
     <!-- Fullscreen Gantt Preview Modal -->
     <div id="ganttModal" class="gantt-modal" aria-hidden="true">

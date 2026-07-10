@@ -184,7 +184,15 @@ const projectTemplates = [
   },
 ];
 
-let state = structuredClone(defaultProject);
+function createEmptyProject() {
+  return {
+    title: defaultProject.title,
+    projectStart: '',
+    phases: [],
+  };
+}
+
+let state = createEmptyProject();
 
 const API_BASE = String(window.LITEGANTT_API_BASE || '').replace(/\/+$/, '');
 const phaseAccents = [
@@ -243,6 +251,23 @@ const CODE_FINGERPRINT = Object.freeze({
 
 const introScreen = document.querySelector('#introScreen');
 const appShell = document.querySelector('#appShell');
+const homeScreen = document.querySelector('#homeScreen');
+const templateSetupScreen = document.querySelector('#templateSetupScreen');
+const homeTemplateZone = document.querySelector('.home-template-zone');
+const homeTemplateButtons = document.querySelectorAll('[data-home-template]');
+const homeBlankBtn = document.querySelector('#homeBlankBtn');
+const homeExcelCardBtn = document.querySelector('#homeExcelCardBtn');
+const setupBackBtn = document.querySelector('#setupBackBtn');
+const setupCancelBtn = document.querySelector('#setupCancelBtn');
+const setupGenerateBtn = document.querySelector('#setupGenerateBtn');
+const setupTitle = document.querySelector('#setupTitle');
+const setupSummary = document.querySelector('#setupSummary');
+const setupProjectNameInput = document.querySelector('#setupProjectNameInput');
+const setupProjectStartInput = document.querySelector('#setupProjectStartInput');
+const setupHint = document.querySelector('#setupHint');
+const setupTemplateMeta = document.querySelector('#setupTemplateMeta');
+const setupTemplateName = document.querySelector('#setupTemplateName');
+const setupPhasePreview = document.querySelector('#setupPhasePreview');
 const topbar = document.querySelector('.topbar');
 const layout = document.querySelector('.layout');
 const enterAppBtn = document.querySelector('#enterAppBtn');
@@ -323,6 +348,9 @@ let introStepIndex = 0;
 let introStepTimer = null;
 let introSubtitleIndex = 0;
 let introSubtitleTimer = null;
+let currentView = 'home';
+let setupMode = 'template';
+let pendingSetupTemplateId = projectTemplates[0]?.id || '';
 
 const excelImportLabels = {
   action: '导入 Excel',
@@ -368,6 +396,160 @@ const introHealthScores = ['62', '74', '88'];
 
 function prefersReducedMotion() {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}
+
+function setScreenVisibility(screen, visible) {
+  if (!screen) return;
+  screen.hidden = !visible;
+  screen.setAttribute('aria-hidden', String(!visible));
+}
+
+function setSetupHint(message = '模板会根据开始日期自动避开周末和节假日。', stateName = '') {
+  if (!setupHint) return;
+  setupHint.textContent = message;
+  if (stateName) {
+    setupHint.dataset.state = stateName;
+  } else {
+    delete setupHint.dataset.state;
+  }
+}
+
+function showHome() {
+  clearIntroTimers();
+  currentView = 'home';
+  document.body.classList.remove('intro-active', 'intro-leaving', 'setup-active', 'app-entered');
+  document.body.classList.add('home-active');
+  setScreenVisibility(homeScreen, true);
+  setScreenVisibility(templateSetupScreen, false);
+  setScreenVisibility(introScreen, false);
+  setScreenVisibility(appShell, false);
+  closeInitMenu();
+  closeIoMenu();
+  closeTemplateDialog();
+  syncHealthPanelStickyOffset();
+}
+
+function showEditor() {
+  clearIntroTimers();
+  currentView = 'editor';
+  document.body.classList.remove('home-active', 'setup-active', 'intro-active', 'intro-leaving');
+  document.body.classList.add('app-entered');
+  setScreenVisibility(homeScreen, false);
+  setScreenVisibility(templateSetupScreen, false);
+  setScreenVisibility(introScreen, false);
+  setScreenVisibility(appShell, true);
+  syncHealthPanelStickyOffset();
+  requestAnimationFrame(() => syncHealthPanelStickyOffset());
+}
+
+function getSetupTemplate() {
+  return projectTemplates.find((template) => template.id === pendingSetupTemplateId) || projectTemplates[0] || null;
+}
+
+function renderSetupPhasePreview(template) {
+  if (!setupPhasePreview) return;
+  setupPhasePreview.textContent = '';
+  const phases = template?.phases || [];
+  phases.forEach((phase, index) => {
+    const item = makeElement('div', 'setup-phase-item');
+    item.style.setProperty('--phase-accent', phaseAccents[index % phaseAccents.length]);
+    item.append(
+      makeElement('span', '', `P${index + 1}`),
+      makeElement('strong', '', phase.name),
+      makeElement('small', '', `${phase.items?.length || 0} 项任务`),
+    );
+    setupPhasePreview.append(item);
+  });
+}
+
+function openTemplateSetup(templateId, mode = 'template') {
+  setupMode = mode;
+  if (templateId) pendingSetupTemplateId = templateId;
+  const template = getSetupTemplate();
+  const isBlank = setupMode === 'blank';
+  currentView = 'setup';
+
+  document.body.classList.remove('home-active', 'app-entered', 'intro-active', 'intro-leaving');
+  document.body.classList.add('setup-active');
+  setScreenVisibility(homeScreen, false);
+  setScreenVisibility(templateSetupScreen, true);
+  setScreenVisibility(introScreen, false);
+  setScreenVisibility(appShell, false);
+
+  if (setupTitle) setupTitle.textContent = isBlank ? '配置空白计划' : `配置${template?.name || '项目模板'}`;
+  if (setupSummary) {
+    setupSummary.textContent = isBlank
+      ? '创建一个空白项目壳，进入工作台后自行添加阶段与任务。'
+      : (template?.summary || '确认项目基本信息后生成计划。');
+  }
+  if (setupProjectNameInput) {
+    setupProjectNameInput.value = isBlank
+      ? '空白项目计划（周视图）'
+      : (template?.title || DEFAULT_TITLE);
+  }
+  if (setupProjectStartInput && !isIsoDate(setupProjectStartInput.value)) {
+    setupProjectStartInput.value = todayIsoDate();
+  }
+  if (setupTemplateMeta) {
+    setupTemplateMeta.textContent = isBlank
+      ? '自定义阶段'
+      : getTemplateMetaText(template || {});
+  }
+  if (setupTemplateName) setupTemplateName.textContent = isBlank ? '空白计划' : (template?.name || '项目模板');
+  if (setupGenerateBtn) setupGenerateBtn.textContent = isBlank ? '进入编辑工作台' : '生成计划';
+  setSetupHint(isBlank ? '进入工作台后，可从“添加阶段”开始编制计划。' : '模板会根据开始日期自动避开周末和节假日。');
+  renderSetupPhasePreview(isBlank ? null : template);
+  window.setTimeout(() => setupProjectNameInput?.focus(), 0);
+}
+
+function applyBlankProjectFromSetup() {
+  state = {
+    title: String(setupProjectNameInput?.value || '').trim() || '空白项目计划（周视图）',
+    projectStart: setupProjectStartInput?.value || '',
+    phases: [],
+  };
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  focusedPhaseIndex = null;
+  if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
+  focusPhaseTimer = null;
+  expandedPhaseIndexes.clear();
+  previewZoomMode = 'fit';
+  showEditor();
+  render();
+  setStatus('已创建空白计划，可从添加阶段开始编制。', 'ok');
+}
+
+function applySetupProject() {
+  const projectName = String(setupProjectNameInput?.value || '').trim();
+  const projectStart = setupProjectStartInput?.value || '';
+  if (!projectName) {
+    setSetupHint('请先填写项目名称。', 'error');
+    setupProjectNameInput?.focus();
+    return;
+  }
+  if (!isIsoDate(projectStart)) {
+    setSetupHint('请先填写有效的项目开始日期。', 'error');
+    setupProjectStartInput?.focus();
+    return;
+  }
+  if (setupMode === 'blank') {
+    applyBlankProjectFromSetup();
+    return;
+  }
+
+  const template = getSetupTemplate();
+  if (!template) {
+    setSetupHint('当前没有可用模板。', 'error');
+    return;
+  }
+  try {
+    const project = buildProjectFromTemplate(template, projectStart);
+    project.title = projectName;
+    applyImportedProject(project);
+    setStatus(`已生成「${template.name}」计划，共 ${project.phases.length} 个阶段、${getProjectTaskCount(project)} 项任务。`, 'ok');
+  } catch (error) {
+    setSetupHint(error instanceof Error ? error.message : String(error), 'error');
+  }
 }
 
 function clearIntroTimers() {
@@ -437,7 +619,6 @@ function startIntroStepLoop() {
 function enterApplication({ instant = false } = {}) {
   clearIntroTimers();
   if (enterAppBtn) enterAppBtn.disabled = true;
-  if (appShell) appShell.setAttribute('aria-hidden', 'false');
   if (introScreen) introScreen.setAttribute('aria-hidden', 'true');
   if (instant && introScreen) {
     introScreen.style.transition = 'none';
@@ -452,9 +633,24 @@ function enterApplication({ instant = false } = {}) {
         introScreen.hidden = true;
       }
       document.body.classList.remove('intro-leaving');
-      syncHealthPanelStickyOffset();
+      showHome();
     }, instant ? 0 : 520);
   });
+}
+
+function showIntroDemo() {
+  if (!introScreen || !appShell) return;
+  if (enterAppBtn) enterAppBtn.disabled = false;
+  introScreen.hidden = false;
+  introScreen.style.transition = '';
+  introScreen.setAttribute('aria-hidden', 'false');
+  setScreenVisibility(homeScreen, false);
+  setScreenVisibility(templateSetupScreen, false);
+  setScreenVisibility(appShell, false);
+  document.body.classList.remove('home-active', 'setup-active', 'app-entered', 'intro-leaving');
+  document.body.classList.add('intro-active');
+  startIntroSubtitleLoop();
+  startIntroStepLoop();
 }
 
 function initIntroScreen() {
@@ -465,12 +661,8 @@ function initIntroScreen() {
     return;
   }
 
-  document.body.classList.add('intro-active');
-  document.body.classList.remove('app-entered');
-  appShell.setAttribute('aria-hidden', 'true');
-  introScreen.setAttribute('aria-hidden', 'false');
-  startIntroSubtitleLoop();
-  startIntroStepLoop();
+  clearIntroTimers();
+  showHome();
 
   if (enterAppBtn) {
     enterAppBtn.addEventListener('click', () => enterApplication());
@@ -1333,7 +1525,7 @@ function makeTemplateWindowTask(name, anchorDate, startOffset, endOffset, milest
 }
 
 function getTemplateWorkdayCount(template) {
-  return template.phases.reduce((sum, phase) => {
+  return (template?.phases || []).reduce((sum, phase) => {
     return sum + phase.items.reduce((phaseSum, item) => {
       return phaseSum + (item.milestone ? 1 : Math.max(1, Math.round(Number(item.workdays) || 1)));
     }, 0);
@@ -1341,11 +1533,11 @@ function getTemplateWorkdayCount(template) {
 }
 
 function getTemplateTaskCount(template) {
-  return template.phases.reduce((sum, phase) => sum + phase.items.length, 0);
+  return (template?.phases || []).reduce((sum, phase) => sum + phase.items.length, 0);
 }
 
 function getTemplateMetaText(template) {
-  const baseText = `${template.phases.length} 个阶段 · ${getTemplateTaskCount(template)} 项任务`;
+  const baseText = `${template?.phases?.length || 0} 个阶段 · ${getTemplateTaskCount(template)} 项任务`;
   if (template.durationLabel === '') return baseText;
   return `${baseText} · ${template.durationLabel || `约 ${getTemplateWorkdayCount(template)} 个工作日`}`;
 }
@@ -2307,6 +2499,14 @@ function makeHealthStat(label, value, detail, tone = '') {
 }
 
 function getProjectHealthTone(metrics) {
+  if (metrics.phaseCount === 0) {
+    return {
+      tone: 'ready',
+      label: '待排期',
+      detail: '先创建阶段与任务',
+    };
+  }
+
   if (metrics.overdueCount > 0) {
     return {
       tone: 'risk',
@@ -2406,14 +2606,21 @@ function renderProjectStats() {
 
   const remainingCard = makeElement('article', 'health-card health-metric-card');
   const remainingCopy = makeElement('div', 'health-metric-copy');
+  const hasSchedule = metrics.totalDays > 0;
   remainingCopy.append(
     makeElement('h3', '', '剩余工期'),
-    makeElement('div', 'health-metric-value', `${metrics.remainingDays} 天`),
-    makeElement('div', 'health-metric-sub', `总 ${metrics.totalDays || '-'} 天 · 已过 ${metrics.elapsedDays} 天 · 剩 ${metrics.remainingDays} 天`),
+    makeElement('div', 'health-metric-value', hasSchedule ? `${metrics.remainingDays} 天` : '待排期'),
+    makeElement(
+      'div',
+      'health-metric-sub',
+      hasSchedule
+        ? `总 ${metrics.totalDays} 天 · 已过 ${metrics.elapsedDays} 天 · 剩 ${metrics.remainingDays} 天`
+        : '创建阶段后自动计算工期',
+    ),
   );
   remainingCard.append(
     remainingCopy,
-    makeElement('span', 'metric-badge', `${metrics.remainingWorkdays} 个有效工作日`),
+    makeElement('span', 'metric-badge', hasSchedule ? `${metrics.remainingWorkdays} 个有效工作日` : '等待计划区间'),
   );
 
   const milestonePercent = metrics.milestoneCount
@@ -3127,6 +3334,32 @@ function focusPhase(phaseIndex) {
   }, 1800);
 }
 
+function addBlankPhase() {
+  expandedPhaseIndexes.clear();
+  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
+  state.phases.unshift({
+    name: '新阶段',
+    start: '',
+    end: '',
+    tasks: [],
+  });
+  focusPhase(0);
+}
+
+function renderEditorEmptyState() {
+  const empty = makeElement('section', 'editor-empty-state');
+  empty.append(
+    makeElement('span', 'eyebrow', 'Plan Console'),
+    makeElement('h3', '', '当前计划暂无阶段'),
+    makeElement('p', '', '点击右上角“添加阶段”开始编制，或通过初始化菜单恢复示例与模板。'),
+  );
+  const action = makeElement('button', 'secondary-btn editor-empty-action', '+ 添加阶段');
+  action.type = 'button';
+  action.addEventListener('click', addBlankPhase);
+  empty.append(action);
+  return empty;
+}
+
 function render() {
   state.phases.forEach(normalizeTaskDates);
   syncProjectStart();
@@ -3136,6 +3369,12 @@ function render() {
   }
   phaseList.textContent = '';
   renderProjectStats();
+
+  if (state.phases.length === 0) {
+    phaseList.append(renderEditorEmptyState());
+    renderRightPane();
+    return;
+  }
 
   state.phases.forEach((phase, phaseIndex) => {
     const phaseNode = phaseTemplate.content.firstElementChild.cloneNode(true);
@@ -3426,6 +3665,7 @@ function applyImportedProject(project) {
   focusPhaseTimer = null;
   expandedPhaseIndexes = new Set(state.phases.map((_, index) => index));
   previewZoomMode = 'fit';
+  showEditor();
   render();
   requestAnimationFrame(() => applyPreviewZoom());
 }
@@ -3537,17 +3777,57 @@ function toggleIoMenu() {
   ioMenuBtn.setAttribute('aria-expanded', String(isOpen));
 }
 
-document.querySelector('#addPhaseBtn').addEventListener('click', () => {
-  expandedPhaseIndexes.clear();
-  breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
-  state.phases.unshift({
-    name: '新阶段',
-    start: '',
-    end: '',
-    tasks: [],
+function setHomeTemplateActive(activeButton) {
+  if (!activeButton) return;
+  document.querySelectorAll('.home-template-card').forEach((button) => {
+    button.classList.toggle('home-template-active', button === activeButton);
   });
-  focusPhase(0);
+}
+
+if (homeTemplateZone) {
+  homeTemplateZone.addEventListener('mousemove', (event) => {
+    const card = event.target.closest?.('.home-template-card');
+    if (card) setHomeTemplateActive(card);
+  });
+  homeTemplateZone.addEventListener('focusin', (event) => {
+    const card = event.target.closest?.('.home-template-card');
+    if (card) setHomeTemplateActive(card);
+  });
+}
+
+document.querySelector('#addPhaseBtn').addEventListener('click', addBlankPhase);
+
+homeTemplateButtons.forEach((button) => {
+  button.addEventListener('pointerenter', () => setHomeTemplateActive(button));
+  button.addEventListener('mouseenter', () => setHomeTemplateActive(button));
+  button.addEventListener('focus', () => setHomeTemplateActive(button));
+  button.addEventListener('click', () => openTemplateSetup(button.dataset.homeTemplate, 'template'));
 });
+if (homeBlankBtn) {
+  homeBlankBtn.addEventListener('pointerenter', () => setHomeTemplateActive(homeBlankBtn));
+  homeBlankBtn.addEventListener('mouseenter', () => setHomeTemplateActive(homeBlankBtn));
+  homeBlankBtn.addEventListener('focus', () => setHomeTemplateActive(homeBlankBtn));
+  homeBlankBtn.addEventListener('click', () => openTemplateSetup('', 'blank'));
+}
+if (homeExcelCardBtn) {
+  homeExcelCardBtn.addEventListener('pointerenter', () => setHomeTemplateActive(homeExcelCardBtn));
+  homeExcelCardBtn.addEventListener('mouseenter', () => setHomeTemplateActive(homeExcelCardBtn));
+  homeExcelCardBtn.addEventListener('focus', () => setHomeTemplateActive(homeExcelCardBtn));
+  homeExcelCardBtn.addEventListener('click', () => importExcelInput?.click());
+}
+if (setupBackBtn) setupBackBtn.addEventListener('click', showHome);
+if (setupCancelBtn) setupCancelBtn.addEventListener('click', showHome);
+if (setupGenerateBtn) setupGenerateBtn.addEventListener('click', applySetupProject);
+if (setupProjectNameInput) setupProjectNameInput.addEventListener('input', () => setSetupHint());
+if (setupProjectStartInput) setupProjectStartInput.addEventListener('input', () => setSetupHint());
+if (setupProjectStartInput) {
+  setupProjectStartInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      applySetupProject();
+    }
+  });
+}
 
 if (clearBtn) clearBtn.addEventListener('click', () => {
   closeInitMenu();
@@ -3572,11 +3852,15 @@ if (resetBtn) resetBtn.addEventListener('click', () => {
   if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
   focusPhaseTimer = null;
   expandedPhaseIndexes.clear();
+  showEditor();
   render();
   setStatus('已恢复示例数据。');
 });
 
-if (templateLibraryBtn) templateLibraryBtn.addEventListener('click', openTemplateDialog);
+if (templateLibraryBtn) templateLibraryBtn.addEventListener('click', () => {
+  closeInitMenu();
+  openTemplateSetup(selectedTemplateId || projectTemplates[0]?.id || '', 'template');
+});
 if (templateBackdrop) templateBackdrop.addEventListener('click', closeTemplateDialog);
 if (cancelTemplateBtn) cancelTemplateBtn.addEventListener('click', closeTemplateDialog);
 if (closeTemplateDialogBtn) closeTemplateDialogBtn.addEventListener('click', closeTemplateDialog);
