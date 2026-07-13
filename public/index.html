@@ -67,8 +67,8 @@
           </button>
           <button class="home-template-card" type="button" data-home-template="software-development">
             <span class="home-template-icon home-icon-dev" aria-hidden="true"></span>
-            <strong>软件开发项目</strong>
-            <small>适用于敏捷/瀑布开发，包含需求、设计、开发、测试、发布全流程</small>
+            <strong>软件敏捷迭代</strong>
+            <small>适用于 Sprint 迭代，覆盖规划、并行开发、测试准出、提审与灰度发布</small>
             <span class="home-card-chips">
               <i>阶段模板</i>
               <i>节假日排除</i>
@@ -89,10 +89,10 @@
             </span>
             <em>进入配置 <b>›</b></em>
           </button>
-          <button id="homeExcelCardBtn" class="home-template-card home-utility-card" type="button">
-            <span class="home-template-icon home-icon-excel" aria-hidden="true"></span>
-            <strong>导入 Excel</strong>
-            <small>基于 Excel 数据快速生成甘特图，自动映射任务与时间</small>
+          <button class="home-template-card" type="button" data-home-template="large-marketing-event">
+            <span class="home-template-icon home-icon-event" aria-hidden="true"></span>
+            <strong>大型市场活动</strong>
+            <small>适用于品牌发布会、峰会活动，覆盖策划邀约、宣传推广、现场执行与复盘</small>
             <span class="home-card-chips">
               <i>阶段模板</i>
               <i>节假日排除</i>
@@ -423,16 +423,11 @@
     <header class="topbar">
       <div class="topbar-inner">
         <div class="brand-block">
-          <div class="brand-kicker">
-            <span class="brand-dot"></span>
-            <span>Delivery Plan Control</span>
-          </div>
-          <h1>计划即刻成图，交付尽在掌握</h1>
-          <p>实时预览 · 任务拆解 · 里程碑管理</p>
-          <div class="brand-track" aria-hidden="true">
-            <i></i>
-            <i></i>
-            <i></i>
+          <div class="editor-brand-row">
+            <div class="editor-brand-logo">
+              <span class="home-logo-mark" aria-hidden="true"></span>
+              <strong>LiteGantt</strong>
+            </div>
           </div>
         </div>
 
@@ -459,31 +454,32 @@
           </div>
         </div>
       </div>
+      <div id="editorEntryBanner" class="editor-entry-banner" hidden>
+        <div class="entry-banner-copy">
+          <span>已生成</span>
+          <strong id="editorEntryMessage">已根据模板生成初版计划，可继续调整阶段、任务与里程碑。</strong>
+        </div>
+        <ol class="entry-stepper" aria-label="进入编辑流程">
+          <li>选择模板</li>
+          <li>配置参数</li>
+          <li>生成计划</li>
+          <li class="active">编辑甘特图</li>
+        </ol>
+      </div>
     </header>
 
     <main class="layout">
       <section class="plan-console" aria-label="项目计划区域">
         <section class="panel control-panel command-panel left-console" aria-label="阶段计划操作台">
           <div class="console-head">
-            <div class="command-section command-copy">
-              <span class="eyebrow">Plan Console</span>
-              <h2>阶段计划操作台</h2>
-              <p>从阶段开始组织计划，展开后维护任务明细与里程碑。</p>
-            </div>
-
-            <div class="console-tools" aria-label="阶段操作与初始化">
-              <button id="addPhaseBtn" class="secondary-btn workspace-add-phase-btn" type="button">+ 添加阶段</button>
-              <div class="init-menu">
-                <button id="initMenuBtn" class="init-menu-btn" type="button" aria-expanded="false" aria-controls="initMenuPanel">
-                  <span>初始化</span>
-                  <small aria-hidden="true">▼</small>
-                </button>
-                <div id="initMenuPanel" class="init-menu-panel" role="menu">
-                  <button id="templateLibraryBtn" class="init-menu-item" type="button" role="menuitem">从模板创建</button>
-                  <button id="resetBtn" class="init-menu-item" type="button" role="menuitem">恢复示例</button>
-                  <button id="clearBtn" class="init-menu-item danger" type="button" role="menuitem">清空当前计划</button>
-                </div>
+              <div class="command-section command-copy">
+                <span class="eyebrow">Plan Console</span>
+              <h2>阶段计划操作台 <small id="consoleTemplateBadge" class="console-template-badge" hidden>来自模板</small></h2>
+                <p>从阶段开始组织计划，展开后维护任务明细与里程碑。</p>
               </div>
+
+            <div class="console-tools" aria-label="阶段操作">
+              <button id="addPhaseBtn" class="secondary-btn workspace-add-phase-btn" type="button">+ 添加阶段</button>
             </div>
           </div>
 
@@ -494,19 +490,6 @@
                 <h2>阶段列表</h2>
               </div>
               <div class="stage-list-actions" aria-label="甘特图操作">
-                <div class="timeline-unit-control" aria-label="甘特图生成单位">
-                  <span class="timeline-unit-label">甘特粒度</span>
-                  <div class="timeline-unit-options" role="group" aria-label="选择甘特图最小单位">
-                    <button class="timeline-unit-option active" type="button" data-gantt-unit="week" aria-pressed="true">
-                      <span>周</span>
-                      <small>执行跟踪</small>
-                    </button>
-                    <button class="timeline-unit-option" type="button" data-gantt-unit="month" aria-pressed="false">
-                      <span>月</span>
-                      <small>管理汇报</small>
-                    </button>
-                  </div>
-                </div>
                 <button id="previewGanttBtn" class="preview-btn workspace-preview-btn" type="button">
                   <span>预览甘特图</span>
                 </button>
@@ -550,7 +533,15 @@
             <h2>甘特图全屏预览</h2>
           </div>
           <div class="gantt-modal-tools">
-            <div class="preview-tools" aria-label="预览缩放控制">
+            <div class="preview-tools" aria-label="甘特图预览工具">
+              <label class="preview-unit-field" for="timelineUnitSelect">
+                <span>粒度</span>
+                <select id="timelineUnitSelect" class="preview-unit-select" aria-label="选择甘特图粒度">
+                  <option value="day">天</option>
+                  <option value="week" selected>周</option>
+                  <option value="month">月</option>
+                </select>
+              </label>
               <button id="previewEditBtn" class="preview-edit-btn" type="button" aria-pressed="false">编辑</button>
               <button id="fitPreviewBtn" class="zoom-btn active" type="button">全览</button>
               <button id="zoomOutBtn" class="zoom-icon-btn" type="button" aria-label="缩小">−</button>

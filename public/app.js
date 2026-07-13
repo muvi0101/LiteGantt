@@ -108,12 +108,12 @@ const projectTemplates = [
         items: [
           { name: '基础数据收集', workdays: 5 },
           { name: '系统配置', workdays: 6 },
-          { name: '功能开发', workdays: 20 },
-          { name: '接口开发', workdays: 20 },
-          { name: '单元测试', workdays: 6 },
-          { name: '集成测试', workdays: 5 },
-          { name: 'UAT测试', workdays: 20 },
-          { name: '上线切换准备', workdays: 14 },
+          { name: '功能开发', workdays: 10 },
+          { name: '接口开发', workdays: 10 },
+          { name: '单元测试', workdays: 10 },
+          { name: '集成测试', workdays: 11 },
+          { name: 'UAT测试', workdays: 16 },
+          { name: '上线切换准备', workdays: 10 },
           { name: '用户培训', workdays: 3 },
           { name: '上线切换', milestone: true },
         ],
@@ -130,54 +130,91 @@ const projectTemplates = [
   },
   {
     id: 'software-development',
-    name: '软件开发项目',
-    title: '软件开发项目计划（周视图）',
-    summary: '适合 Web、移动端或内部系统开发，覆盖需求冻结、迭代开发、测试验收和发布。',
-    tags: ['需求冻结', '迭代开发', '发布上线'],
+    name: '软件敏捷迭代',
+    title: '软件敏捷迭代计划（周视图）',
+    summary: '适合 Sprint 节奏的软件迭代，覆盖规划、并行开发、测试准出、提审与灰度发布。',
+    tags: ['Sprint规划', '并行开发', '发版交付'],
+    schedule: 'agile-iteration-relative',
+    durationLabel: '',
     phases: [
       {
-        name: '需求定义与范围冻结',
+        name: 'Sprint规划',
         items: [
-          { name: '需求澄清与用户故事拆分', workdays: 3 },
-          { name: '原型与 PRD 确认', workdays: 4 },
-          { name: '技术方案与排期评审', workdays: 2 },
-          { name: '需求范围冻结', milestone: true },
+          { name: '用户故事梳理与优先级排序', workdays: 3 },
+          { name: '技术方案评审与估时', workdays: 2, milestone: true },
         ],
       },
       {
-        name: '迭代一开发',
+        name: '开发实施',
         items: [
-          { name: '开发环境与基础框架搭建', workdays: 3 },
-          { name: '核心模块开发', workdays: 7 },
-          { name: '自测与代码评审', workdays: 2 },
-          { name: '迭代一提测', milestone: true },
+          { name: '后端接口开发', workdays: 10 },
+          { name: '前端/移动端页面开发', workdays: 10 },
+          { name: '前后端联调', workdays: 2, milestone: true },
         ],
       },
       {
-        name: '迭代二开发',
+        name: '质量保障',
         items: [
-          { name: '扩展模块与页面联动开发', workdays: 6 },
-          { name: '权限、数据与异常处理', workdays: 4 },
-          { name: '性能与兼容性处理', workdays: 2 },
-          { name: '功能开发完成', milestone: true },
+          { name: '功能测试用例编写', workdays: 5 },
+          { name: '冒烟测试与系统测试', workdays: 5 },
+          { name: '回归测试与Bug修复', workdays: 3, milestone: true },
         ],
       },
       {
-        name: '测试修复与验收',
+        name: '发版与交付',
         items: [
-          { name: '系统测试用例执行', workdays: 4 },
-          { name: '缺陷修复与回归测试', workdays: 5 },
-          { name: '验收场景走查', workdays: 2 },
-          { name: '验收通过', milestone: true },
+          { name: '应用商店/应用市场提审', workdays: 7, milestone: true },
+          { name: '灰度发布与监控', workdays: 2 },
+          { name: '全量发布与版本号更新', workdays: 1, milestone: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'large-marketing-event',
+    name: '大型市场活动',
+    title: '大型市场活动计划（周视图）',
+    summary: '适合品牌发布会、峰会等大型市场活动，覆盖策划邀约、内容物料、宣传推广、现场执行与复盘收尾。',
+    tags: ['策划邀约', '内容物料', '现场执行'],
+    schedule: 'large-marketing-event-relative',
+    durationLabel: '',
+    phases: [
+      {
+        name: '策划与邀约',
+        items: [
+          { name: '活动方案与预算审批', workdays: 10 },
+          { name: '场地预定', workdays: 3, milestone: true },
+          { name: '核心嘉宾邀约', workdays: 30 },
         ],
       },
       {
-        name: '发布上线',
+        name: '内容与物料',
         items: [
-          { name: '发布清单与变更窗口确认', workdays: 1 },
-          { name: '灰度发布与生产验证', workdays: 2 },
-          { name: '监控、回滚预案与交接', workdays: 2 },
-          { name: '上线完成', milestone: true },
+          { name: '主视觉设计与延展', workdays: 15, milestone: true },
+          { name: '宣传视频制作', workdays: 20 },
+          { name: '展台及印刷品制作', workdays: 15 },
+        ],
+      },
+      {
+        name: '宣传推广',
+        items: [
+          { name: '预热期媒体投放', workdays: 15, milestone: true },
+          { name: '倒计时海报/推文', workdays: 5 },
+          { name: '媒体记者确认', workdays: 10 },
+        ],
+      },
+      {
+        name: '现场执行',
+        items: [
+          { name: '舞台搭建与彩排', workdays: 2 },
+          { name: '活动当天流程管控', workdays: 1, milestone: true },
+        ],
+      },
+      {
+        name: '复盘收尾',
+        items: [
+          { name: '媒体通稿发布与舆情监控', workdays: 3 },
+          { name: '项目结算与复盘报告', workdays: 5, milestone: true },
         ],
       },
     ],
@@ -227,6 +264,9 @@ const statusDefaultProgress = {
   延期: 40,
 };
 const DEFAULT_TASK_DAYS = 7;
+const PREVIEW_NAME_COL_WIDTH = 250;
+const PREVIEW_DURATION_COL_SIZE = 'max-content';
+const PREVIEW_DAY_WIDTH = 36;
 const PREVIEW_WEEK_WIDTH = 72;
 const PREVIEW_MONTH_WIDTH = 126;
 const PREVIEW_MAX_WEEKS = 104;
@@ -256,7 +296,9 @@ const templateSetupScreen = document.querySelector('#templateSetupScreen');
 const homeTemplateZone = document.querySelector('.home-template-zone');
 const homeTemplateButtons = document.querySelectorAll('[data-home-template]');
 const homeBlankBtn = document.querySelector('#homeBlankBtn');
-const homeExcelCardBtn = document.querySelector('#homeExcelCardBtn');
+const editorEntryBanner = document.querySelector('#editorEntryBanner');
+const editorEntryMessage = document.querySelector('#editorEntryMessage');
+const consoleTemplateBadge = document.querySelector('#consoleTemplateBadge');
 const setupBackBtn = document.querySelector('#setupBackBtn');
 const setupCancelBtn = document.querySelector('#setupCancelBtn');
 const setupGenerateBtn = document.querySelector('#setupGenerateBtn');
@@ -287,9 +329,6 @@ const projectStats = document.querySelector('#projectStats');
 const DEFAULT_TITLE = '甘特图 - 项目进度计划表（周视图）';
 const phaseTemplate = document.querySelector('#phaseTemplate');
 const taskTemplate = document.querySelector('#taskTemplate');
-const clearBtn = document.querySelector('#clearBtn');
-const resetBtn = document.querySelector('#resetBtn');
-const templateLibraryBtn = document.querySelector('#templateLibraryBtn');
 const templateDialog = document.querySelector('#templateDialog');
 const templateBackdrop = document.querySelector('#templateBackdrop');
 const templateOptions = document.querySelector('#templateOptions');
@@ -298,9 +337,6 @@ const templateHint = document.querySelector('#templateHint');
 const applyTemplateBtn = document.querySelector('#applyTemplateBtn');
 const cancelTemplateBtn = document.querySelector('#cancelTemplateBtn');
 const closeTemplateDialogBtn = document.querySelector('#closeTemplateDialogBtn');
-const initMenu = document.querySelector('.init-menu');
-const initMenuBtn = document.querySelector('#initMenuBtn');
-const initMenuPanel = document.querySelector('#initMenuPanel');
 const saveVersionBtn = document.querySelector('#saveVersionBtn');
 const saveVersionDialog = document.querySelector('#saveVersionDialog');
 const saveVersionBackdrop = document.querySelector('#saveVersionBackdrop');
@@ -326,7 +362,7 @@ const importExcelInput = document.querySelector('#importExcelInput');
 const exportExcelBtn = document.querySelector('#exportExcelBtn');
 const exportImageBtn = document.querySelector('#exportImageBtn');
 const previewGanttBtn = document.querySelector('#previewGanttBtn');
-const timelineUnitButtons = document.querySelectorAll('[data-gantt-unit]');
+const timelineUnitSelect = document.querySelector('#timelineUnitSelect');
 const previewEditBtn = ganttModal ? ganttModal.querySelector('#previewEditBtn') : null;
 const fitPreviewBtn = ganttModal ? ganttModal.querySelector('#fitPreviewBtn') : null;
 const zoomOutBtn = ganttModal ? ganttModal.querySelector('#zoomOutBtn') : null;
@@ -351,6 +387,7 @@ let introSubtitleTimer = null;
 let currentView = 'home';
 let setupMode = 'template';
 let pendingSetupTemplateId = projectTemplates[0]?.id || '';
+let editorEntryContext = null;
 
 const excelImportLabels = {
   action: '导入 Excel',
@@ -414,6 +451,51 @@ function setSetupHint(message = '模板会根据开始日期自动避开周末�
   }
 }
 
+function makeTemplateEntryContext(template) {
+  return {
+    sourceBadge: `来自 ${template?.name || '模板'}`,
+    message: `已根据「${template?.name || '项目模板'}」模板生成初版计划，可继续调整阶段、任务与里程碑。`,
+  };
+}
+
+function makeBlankEntryContext() {
+  return {
+    sourceBadge: '空白计划',
+    message: '已创建空白计划，可从添加阶段开始编制并生成甘特图。',
+  };
+}
+
+function makeExcelEntryContext() {
+  return {
+    sourceBadge: '来自 Excel',
+    message: '已从 Excel 导入项目计划，可继续校准阶段、任务与里程碑。',
+  };
+}
+
+function makeHistoryEntryContext(versionName) {
+  return {
+    sourceBadge: '历史版本',
+    message: `已恢复历史版本「${String(versionName || '未命名版本')}」，可继续编辑或导出。`,
+  };
+}
+
+function setEditorEntryContext(context) {
+  editorEntryContext = context ? { ...context } : null;
+  renderEditorEntryContext();
+}
+
+function renderEditorEntryContext() {
+  const hasContext = Boolean(editorEntryContext);
+  if (editorEntryBanner) editorEntryBanner.hidden = !hasContext;
+  if (consoleTemplateBadge) consoleTemplateBadge.hidden = !hasContext;
+  if (!hasContext) return;
+
+  if (editorEntryMessage) {
+    editorEntryMessage.textContent = editorEntryContext.message || '已生成初版计划，可继续调整阶段、任务与里程碑。';
+  }
+  if (consoleTemplateBadge) consoleTemplateBadge.textContent = editorEntryContext.sourceBadge || '当前计划';
+}
+
 function showHome() {
   clearIntroTimers();
   currentView = 'home';
@@ -423,7 +505,6 @@ function showHome() {
   setScreenVisibility(templateSetupScreen, false);
   setScreenVisibility(introScreen, false);
   setScreenVisibility(appShell, false);
-  closeInitMenu();
   closeIoMenu();
   closeTemplateDialog();
   syncHealthPanelStickyOffset();
@@ -514,6 +595,7 @@ function applyBlankProjectFromSetup() {
   focusPhaseTimer = null;
   expandedPhaseIndexes.clear();
   previewZoomMode = 'fit';
+  setEditorEntryContext(makeBlankEntryContext());
   showEditor();
   render();
   setStatus('已创建空白计划，可从添加阶段开始编制。', 'ok');
@@ -545,7 +627,7 @@ function applySetupProject() {
   try {
     const project = buildProjectFromTemplate(template, projectStart);
     project.title = projectName;
-    applyImportedProject(project);
+    applyImportedProject(project, makeTemplateEntryContext(template));
     setStatus(`已生成「${template.name}」计划，共 ${project.phases.length} 个阶段、${getProjectTaskCount(project)} 项任务。`, 'ok');
   } catch (error) {
     setSetupHint(error instanceof Error ? error.message : String(error), 'error');
@@ -900,7 +982,7 @@ function renderBreakdownPanel(phaseIndex, taskIndex) {
   const summaryMeta = makeElement('div', 'inline-breakdown-meta-grid');
   summaryMeta.append(
     makeBreakdownMeta('父任务区间', task.start && task.end ? `${fmtMd(task.start)}-${fmtMd(task.end)}` : '-'),
-    makeBreakdownMeta('计划用时', task.start && task.end ? `${daysInclusiveIso(task.start, task.end)}天` : '-'),
+    makeBreakdownMeta('计划用时', task.start && task.end ? `${countWorkdaysInclusive(task.start, task.end)}个工作日` : '-'),
     makeBreakdownMeta('子任务', `${task.subtasks.length}项`, 'subtask-count'),
     makeBreakdownMeta('完成度', progress === null ? '未拆解' : `${progress}%`, 'progress'),
   );
@@ -1060,11 +1142,18 @@ function syncHealthPanelStickyOffset() {
 }
 
 function normalizeTimelineUnit(unit) {
+  if (unit === 'day') return 'day';
   return unit === 'month' ? 'month' : 'week';
 }
 
 function timelineUnitLabel(unit = selectedTimelineUnit) {
-  return normalizeTimelineUnit(unit) === 'month' ? '月视图' : '周视图';
+  const normalizedUnit = normalizeTimelineUnit(unit);
+  if (normalizedUnit === 'day') return '天视图';
+  return normalizedUnit === 'month' ? '月视图' : '周视图';
+}
+
+function isPreviewEditableUnit(unit = selectedTimelineUnit) {
+  return normalizeTimelineUnit(unit) !== 'month';
 }
 
 function updatePreviewEditControls() {
@@ -1106,7 +1195,7 @@ function showPreviewRiskNotice(messages, tone = 'warning') {
 }
 
 function setPreviewEditMode(enabled, renderPreviewAfterChange = true) {
-  if (enabled && normalizeTimelineUnit(selectedTimelineUnit) !== 'week') {
+  if (enabled && !isPreviewEditableUnit(selectedTimelineUnit)) {
     selectedTimelineUnit = 'week';
     updateTimelineUnitControls();
   }
@@ -1119,11 +1208,9 @@ function setPreviewEditMode(enabled, renderPreviewAfterChange = true) {
 
 function updateTimelineUnitControls() {
   const unit = normalizeTimelineUnit(selectedTimelineUnit);
-  timelineUnitButtons.forEach((button) => {
-    const active = normalizeTimelineUnit(button.dataset.ganttUnit) === unit;
-    button.classList.toggle('active', active);
-    button.setAttribute('aria-pressed', String(active));
-  });
+  if (timelineUnitSelect) {
+    timelineUnitSelect.value = unit;
+  }
   if (previewGanttBtn) {
     const label = previewGanttBtn.querySelector('span') || previewGanttBtn;
     label.textContent = '预览甘特图';
@@ -1134,7 +1221,7 @@ function updateTimelineUnitControls() {
 
 function setTimelineUnit(unit, announce = false) {
   const nextUnit = normalizeTimelineUnit(unit);
-  if (previewEditMode && nextUnit !== 'week') {
+  if (previewEditMode && !isPreviewEditableUnit(nextUnit)) {
     previewEditMode = false;
   }
   selectedTimelineUnit = nextUnit;
@@ -1143,17 +1230,6 @@ function setTimelineUnit(unit, announce = false) {
   if (announce) {
     setStatus(`已切换为${timelineUnitLabel()}预览。`, 'ok');
   }
-}
-
-function closeInitMenu() {
-  initMenu?.classList.remove('open');
-  initMenuBtn?.setAttribute('aria-expanded', 'false');
-}
-
-function toggleInitMenu() {
-  if (!initMenu || !initMenuBtn) return;
-  const isOpen = initMenu.classList.toggle('open');
-  initMenuBtn.setAttribute('aria-expanded', String(isOpen));
 }
 
 function getSelectedTemplate() {
@@ -1215,7 +1291,6 @@ function renderTemplateOptions() {
 
 function openTemplateDialog() {
   if (!templateDialog) return;
-  closeInitMenu();
   if (!getSelectedTemplate()) selectedTemplateId = projectTemplates[0]?.id || '';
   if (templateStartInput && !isIsoDate(templateStartInput.value)) {
     templateStartInput.value = todayIsoDate();
@@ -1250,7 +1325,7 @@ function applySelectedTemplate() {
 
   try {
     const project = buildProjectFromTemplate(template, projectStart);
-    applyImportedProject(project);
+    applyImportedProject(project, makeTemplateEntryContext(template));
     closeTemplateDialog();
     setStatus(`已应用「${template.name}」模板，生成 ${project.phases.length} 个阶段、${getProjectTaskCount(project)} 项任务。`, 'ok');
   } catch (error) {
@@ -1588,18 +1663,18 @@ function buildSaasDeliveryProjectFromTemplate(template, projectStart) {
   ];
   const blueprintConfirmEnd = blueprintConfirm.end;
 
-  const uatTest = makeTemplateWindowTask('UAT测试', blueprintConfirmEnd, 26, 45);
-  const goLive = makeTemplateWindowTask('上线切换', uatTest.end, 15, 15, true);
+  const uatTest = makeTemplateWindowTask('UAT测试', blueprintConfirmEnd, 20, 35);
+  const goLive = makeTemplateWindowTask('上线切换', uatTest.end, 9, 9, true);
   const implementationTasks = [
     makeTemplateWindowTask('基础数据收集', blueprintConfirmEnd, 1, 5),
     makeTemplateWindowTask('系统配置', blueprintConfirmEnd, 1, 6),
-    makeTemplateWindowTask('功能开发', blueprintConfirmEnd, 1, 20),
-    makeTemplateWindowTask('接口开发', blueprintConfirmEnd, 1, 20),
-    makeTemplateWindowTask('单元测试', blueprintConfirmEnd, 15, 20),
-    makeTemplateWindowTask('集成测试', blueprintConfirmEnd, 21, 25),
+    makeTemplateWindowTask('功能开发', blueprintConfirmEnd, 1, 10),
+    makeTemplateWindowTask('接口开发', blueprintConfirmEnd, 1, 10),
+    makeTemplateWindowTask('单元测试', blueprintConfirmEnd, 6, 15),
+    makeTemplateWindowTask('集成测试', blueprintConfirmEnd, 10, 20),
     uatTest,
-    makeTemplateWindowTask('上线切换准备', uatTest.end, 1, 14),
-    makeTemplateWindowTask('用户培训', uatTest.end, 12, 14),
+    makeTemplateWindowTask('上线切换准备', uatTest.end, 1, 10),
+    makeTemplateWindowTask('用户培训', uatTest.end, 7, 9),
     goLive,
   ];
 
@@ -1623,12 +1698,96 @@ function buildSaasDeliveryProjectFromTemplate(template, projectStart) {
   };
 }
 
+function buildAgileIterationProjectFromTemplate(template, projectStart) {
+  const iterationStart = nextWorkingDayIso(projectStart);
+  if (!iterationStart) throw new Error('请选择有效的项目启动日期');
+
+  const storyPlanning = makeTemplateWindowTask('用户故事梳理与优先级排序', iterationStart, 0, 2);
+  const technicalReview = makeTemplateWindowTask('技术方案评审与估时', storyPlanning.end, 1, 2, true);
+  const sprintPlanningTasks = [storyPlanning, technicalReview];
+  const technicalReviewEnd = technicalReview.end;
+
+  const backendDevelopment = makeTemplateWindowTask('后端接口开发', technicalReviewEnd, 1, 10);
+  const frontendDevelopment = makeTemplateWindowTask('前端/移动端页面开发', technicalReviewEnd, 1, 10);
+  const developmentEnd = maxIsoDate([backendDevelopment.end, frontendDevelopment.end]);
+  const integrationTest = makeTemplateWindowTask('前后端联调', developmentEnd, 1, 2, true);
+  const developmentTasks = [backendDevelopment, frontendDevelopment, integrationTest];
+
+  const testCaseDesign = makeTemplateWindowTask('功能测试用例编写', technicalReviewEnd, 1, 5);
+  const systemTest = makeTemplateWindowTask('冒烟测试与系统测试', integrationTest.end, 1, 5);
+  const regressionTest = makeTemplateWindowTask('回归测试与Bug修复', systemTest.end, 1, 3, true);
+  const qualityTasks = [testCaseDesign, systemTest, regressionTest];
+
+  const storeReview = makeTemplateWindowTask('应用商店/应用市场提审', regressionTest.end, 1, 7, true);
+  const grayRelease = makeTemplateWindowTask('灰度发布与监控', storeReview.end, 1, 2);
+  const fullRelease = makeTemplateWindowTask('全量发布与版本号更新', grayRelease.end, 1, 1, true);
+  const releaseTasks = [storeReview, grayRelease, fullRelease];
+
+  return {
+    title: template.title || DEFAULT_TITLE,
+    projectStart: iterationStart,
+    phases: [
+      makeTemplatePhase('Sprint规划', sprintPlanningTasks),
+      makeTemplatePhase('开发实施', developmentTasks),
+      makeTemplatePhase('质量保障', qualityTasks),
+      makeTemplatePhase('发版与交付', releaseTasks),
+    ],
+  };
+}
+
+function buildLargeMarketingEventProjectFromTemplate(template, projectStart) {
+  const eventProjectStart = nextWorkingDayIso(projectStart);
+  if (!eventProjectStart) throw new Error('请选择有效的项目启动日期');
+
+  const planApproval = makeTemplateWindowTask('活动方案与预算审批', eventProjectStart, 0, 9);
+  const venueBooking = makeTemplateWindowTask('场地预定', eventProjectStart, 0, 2, true);
+  const guestInvitation = makeTemplateWindowTask('核心嘉宾邀约', eventProjectStart, 0, 29);
+  const planningTasks = [planApproval, venueBooking, guestInvitation];
+
+  const keyVisual = makeTemplateWindowTask('主视觉设计与延展', planApproval.end, 1, 15, true);
+  const promoVideo = makeTemplateWindowTask('宣传视频制作', keyVisual.end, 1, 20);
+  const boothMaterials = makeTemplateWindowTask('展台及印刷品制作', keyVisual.end, 1, 15);
+  const contentTasks = [keyVisual, promoVideo, boothMaterials];
+
+  const preheatMedia = makeTemplateWindowTask('预热期媒体投放', planApproval.end, 1, 15, true);
+  const countdownPosts = makeTemplateWindowTask('倒计时海报/推文', preheatMedia.end, 1, 5);
+  const mediaConfirmation = makeTemplateWindowTask('媒体记者确认', preheatMedia.start, 1, 10);
+  const promotionTasks = [preheatMedia, countdownPosts, mediaConfirmation];
+
+  const contentReadyEnd = maxIsoDate([promoVideo.end, boothMaterials.end]);
+  const rehearsal = makeTemplateWindowTask('舞台搭建与彩排', contentReadyEnd, 1, 2);
+  const eventDay = makeTemplateWindowTask('活动当天流程管控', rehearsal.end, 1, 1, true);
+  const executionTasks = [rehearsal, eventDay];
+
+  const mediaMonitoring = makeTemplateWindowTask('媒体通稿发布与舆情监控', eventDay.end, 1, 3);
+  const closeoutReport = makeTemplateWindowTask('项目结算与复盘报告', mediaMonitoring.end, 1, 5, true);
+  const closeoutTasks = [mediaMonitoring, closeoutReport];
+
+  return {
+    title: template.title || DEFAULT_TITLE,
+    projectStart: eventProjectStart,
+    phases: [
+      makeTemplatePhase('策划与邀约', planningTasks),
+      makeTemplatePhase('内容与物料', contentTasks),
+      makeTemplatePhase('宣传推广', promotionTasks),
+      makeTemplatePhase('现场执行', executionTasks),
+      makeTemplatePhase('复盘收尾', closeoutTasks),
+    ],
+  };
+}
+
 function buildProjectFromTemplate(template, projectStart) {
   const safeStart = nextWorkingDayIso(projectStart);
   if (!template || !safeStart) throw new Error('请选择模板并填写有效的项目开始日期');
 
   if (template.schedule === 'saas-delivery-relative') {
     return buildSaasDeliveryProjectFromTemplate(template, safeStart);
+  }
+  if (template.schedule === 'agile-iteration-relative') {
+    return buildAgileIterationProjectFromTemplate(template, safeStart);
+  }
+  if (template.schedule === 'large-marketing-event-relative') {
+    return buildLargeMarketingEventProjectFromTemplate(template, safeStart);
   }
 
   let cursor = safeStart;
@@ -1822,6 +1981,42 @@ function getPreviewDayOffset(value, projectStartValue) {
   return Math.max(0, Math.round((dateSortValue(value) - dateSortValue(projectStartValue)) / 86400000));
 }
 
+function getPreviewDayWidth(dayIndex, dayWidthsPx) {
+  return dayWidthsPx?.[dayIndex - 1] || PREVIEW_DAY_WIDTH;
+}
+
+function getPreviewDayTimelinePx(dayOffset, dayWidthsPx) {
+  if (dayOffset < 0) {
+    return dayOffset * getPreviewDayWidth(1, dayWidthsPx);
+  }
+  let px = 0;
+  for (let index = 1; index <= dayOffset; index += 1) px += getPreviewDayWidth(index, dayWidthsPx);
+  return px;
+}
+
+function getPreviewDayDurationPx(startOffset, durationDays, dayWidthsPx) {
+  return getPreviewDayTimelinePx(startOffset + durationDays, dayWidthsPx) - getPreviewDayTimelinePx(startOffset, dayWidthsPx);
+}
+
+function getPreviewDayOffsetFromDayTimelinePx(px, dayWidthsPx) {
+  const widths = Array.isArray(dayWidthsPx) && dayWidthsPx.length ? dayWidthsPx : [PREVIEW_DAY_WIDTH];
+  if (px < 0) {
+    return Math.round(px / (widths[0] || PREVIEW_DAY_WIDTH));
+  }
+
+  let remainingPx = px;
+  for (let index = 0; index < widths.length; index += 1) {
+    const widthPx = widths[index] || PREVIEW_DAY_WIDTH;
+    if (remainingPx <= widthPx) {
+      return index + Math.round(remainingPx / widthPx);
+    }
+    remainingPx -= widthPx;
+  }
+
+  const lastWidth = widths[widths.length - 1] || PREVIEW_DAY_WIDTH;
+  return widths.length + Math.round(remainingPx / lastWidth);
+}
+
 function getPreviewWeekWidth(weekIndex, weekWidthsPx) {
   return weekWidthsPx?.[weekIndex - 1] || PREVIEW_WEEK_WIDTH;
 }
@@ -1864,6 +2059,31 @@ function getPreviewMilestonePointPx(item, projectStartValue, weekWidthsPx) {
   return getPreviewTimelinePx(getPreviewDayOffset(item.end, projectStartValue) + 1, weekWidthsPx);
 }
 
+function getPreviewUnitTimelinePx(dayOffset, timeline) {
+  if (normalizeTimelineUnit(timeline?.unit) === 'day') {
+    return getPreviewDayTimelinePx(dayOffset, timeline.dayWidthsPx);
+  }
+  return getPreviewTimelinePx(dayOffset, timeline?.weekWidthsPx);
+}
+
+function getPreviewUnitDurationPx(startOffset, durationDays, timeline) {
+  if (normalizeTimelineUnit(timeline?.unit) === 'day') {
+    return getPreviewDayDurationPx(startOffset, durationDays, timeline.dayWidthsPx);
+  }
+  return getPreviewDurationPx(startOffset, durationDays, timeline?.weekWidthsPx);
+}
+
+function getPreviewUnitDayOffsetFromTimelinePx(px, timeline) {
+  if (normalizeTimelineUnit(timeline?.unit) === 'day') {
+    return getPreviewDayOffsetFromDayTimelinePx(px, timeline.dayWidthsPx);
+  }
+  return getPreviewDayOffsetFromTimelinePx(px, timeline?.weekWidthsPx);
+}
+
+function getPreviewUnitMilestonePointPx(item, timeline) {
+  return getPreviewUnitTimelinePx(getPreviewDayOffset(item.end, timeline.projectStartValue) + 1, timeline);
+}
+
 function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
   const baseTrackWidth = baseWeeks * PREVIEW_WEEK_WIDTH;
   let extraWeeks = 0;
@@ -1888,15 +2108,42 @@ function getPreviewExtraWeeks(projectStartValue, baseWeeks) {
   return extraWeeks;
 }
 
+function getPreviewExtraDays(projectStartValue, baseDays) {
+  const baseTrackWidth = baseDays * PREVIEW_DAY_WIDTH;
+  let extraDays = 0;
+
+  state.phases.forEach((phase, phaseIndex) => {
+    phase.tasks.forEach((task) => {
+      if (!task.milestone || !isIsoDate(task.start) || !isIsoDate(task.end)) return;
+      const pointPx = (getPreviewDayOffset(task.end, projectStartValue) + 1) * PREVIEW_DAY_WIDTH;
+      const markerGapPx = Number.isFinite(task.markerGapPx) ? task.markerGapPx : PREVIEW_MILESTONE_BAR_TO_STAR_GAP;
+      const markerRightPx = pointPx
+        + markerGapPx
+        + PREVIEW_MILESTONE_STAR_WIDTH
+        + PREVIEW_MILESTONE_STAR_TO_TEXT_GAP
+        + estimatePreviewMilestoneWidth({ ...task, phaseIndex });
+      const overflowPx = Math.max(0, markerRightPx - baseTrackWidth);
+      if (overflowPx > 0) {
+        extraDays = Math.max(extraDays, Math.ceil(overflowPx / PREVIEW_DAY_WIDTH));
+      }
+    });
+  });
+
+  return extraDays;
+}
+
 function getPreviewRange() {
   const projectStartValue = getEarliestPhaseStart();
   const allDates = getAllPreviewDates();
   const projectEndValue = maxIsoDate(allDates);
   if (!projectStartValue || !projectEndValue) return null;
+  const baseDays = Math.max(1, daysInclusiveIso(projectStartValue, projectEndValue));
+  const extraDays = getPreviewExtraDays(projectStartValue, baseDays);
+  const totalDays = Math.min(PREVIEW_MAX_WEEKS * 7, Math.max(1, baseDays + extraDays));
   const baseWeeks = Math.max(4, Math.ceil(daysInclusiveIso(projectStartValue, projectEndValue) / 7));
   const extraWeeks = getPreviewExtraWeeks(projectStartValue, baseWeeks);
   const totalWeeks = Math.min(PREVIEW_MAX_WEEKS, Math.max(4, baseWeeks + extraWeeks));
-  return { projectStartValue, projectEndValue, totalWeeks };
+  return { projectStartValue, projectEndValue, totalDays, totalWeeks };
 }
 
 function getPreviewRows() {
@@ -1957,6 +2204,71 @@ function buildPreviewWeekColumns(projectStartValue, totalWeeks) {
     column.widthPx = Math.ceil(column.widthPx);
   });
   return weekColumns;
+}
+
+function weekdayLabel(value) {
+  const date = isoToUtcDate(value);
+  if (!date) return '';
+  return ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getUTCDay()];
+}
+
+function isWeekendIso(value) {
+  const date = isoToUtcDate(value);
+  if (!date) return false;
+  const day = date.getUTCDay();
+  return day === 0 || day === 6;
+}
+
+function getDayMonthBands(dayColumns) {
+  const bands = [];
+  let activeBand = null;
+  dayColumns.forEach((column) => {
+    const label = monthLabel(column.date);
+    if (!activeBand || activeBand.label !== label) {
+      activeBand = { label, fromDay: column.dayIndex, toDay: column.dayIndex };
+      bands.push(activeBand);
+    } else {
+      activeBand.toDay = column.dayIndex;
+    }
+  });
+  return bands.map((band) => ({
+    ...band,
+    spanDays: band.toDay - band.fromDay + 1,
+  }));
+}
+
+function buildPreviewDayColumns(projectStartValue, totalDays) {
+  const dayColumns = Array.from({ length: totalDays }, (_, index) => {
+    const date = addDaysIso(projectStartValue, index);
+    return {
+      dayIndex: index + 1,
+      date,
+      dayLabel: String(Number(date.slice(8, 10))),
+      weekdayLabel: weekdayLabel(date),
+      isWeekend: isWeekendIso(date),
+      widthPx: PREVIEW_DAY_WIDTH,
+    };
+  });
+
+  getDayMonthBands(dayColumns).forEach((band) => {
+    const requiredWidth = estimatePreviewTextWidth(
+      band.label,
+      '850 15px "Avenir Next", "PingFang SC", "Microsoft YaHei", sans-serif',
+      PREVIEW_WEEK_MONTH_LABEL_PADDING,
+    );
+    const spanColumns = dayColumns.slice(band.fromDay - 1, band.toDay);
+    const currentWidth = spanColumns.reduce((sum, column) => sum + column.widthPx, 0);
+    if (!spanColumns.length || currentWidth >= requiredWidth) return;
+    const extraWidth = (requiredWidth - currentWidth) / spanColumns.length;
+    spanColumns.forEach((column) => {
+      column.widthPx += extraWidth;
+    });
+  });
+
+  dayColumns.forEach((column) => {
+    column.widthPx = Math.ceil(column.widthPx);
+  });
+  return dayColumns;
 }
 
 function getMonthStartIso(value) {
@@ -2141,7 +2453,6 @@ function openSaveVersionDialog() {
     saveCurrentVersion();
     return;
   }
-  closeInitMenu();
   closeIoMenu();
   saveVersionDialog.classList.add('open');
   saveVersionDialog.setAttribute('aria-hidden', 'false');
@@ -2207,7 +2518,7 @@ function makeVersionMetaChips(summary) {
 
 function restoreVersion(record) {
   if (!window.confirm(`恢复到版本「${record.name}」？当前页面未保存的修改会被覆盖。`)) return;
-  applyImportedProject(record.project);
+  applyImportedProject(record.project, makeHistoryEntryContext(record.name));
   closeVersionHistory();
   setStatus(`已恢复版本：${record.name}`, 'ok');
 }
@@ -2229,7 +2540,10 @@ async function exportVersionExcel(record, triggerButton) {
     const response = await fetch(apiUrl('/api/export-xlsx'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(record.project),
+      body: JSON.stringify({
+        ...record.project,
+        timelineUnit: normalizeTimelineUnit(selectedTimelineUnit),
+      }),
     });
 
     if (!response.ok) {
@@ -2665,9 +2979,17 @@ function renderRightPane() {
 
 function durationText(item, unit = selectedTimelineUnit) {
   const days = daysInclusiveIso(item.start, item.end);
+  const normalizedUnit = normalizeTimelineUnit(unit);
   if (!days) return '';
-  if (item.kind === 'phase' && normalizeTimelineUnit(unit) === 'month') {
+  if (item.kind === 'phase' && normalizedUnit === 'month') {
     return `${Math.max(1, Math.ceil(days / 30))}月（${fmtMd(item.start)}-${fmtMd(item.end)}）`;
+  }
+  if (item.kind === 'phase' && normalizedUnit === 'day') {
+    return `${days}天（${fmtMd(item.start)}-${fmtMd(item.end)}）`;
+  }
+  if (item.kind !== 'phase') {
+    const workdays = countWorkdaysInclusive(item.start, item.end);
+    return `${workdays}个工作日（${fmtMd(item.start)}-${fmtMd(item.end)}）`;
   }
   return item.kind === 'phase'
     ? `${Math.ceil(days / 7)}周（${fmtMd(item.start)}-${fmtMd(item.end)}）`
@@ -2708,12 +3030,12 @@ function getPreviewBarMetrics(item, timeline) {
   }
 
   const dayOffset = getPreviewDayOffset(item.start, timeline.projectStartValue);
-  const pointPx = item.milestone ? getPreviewMilestonePointPx(item, timeline.projectStartValue, timeline.weekWidthsPx) : null;
+  const pointPx = item.milestone ? getPreviewUnitMilestonePointPx(item, timeline) : null;
   const barWidthPx = drawAsMilestonePoint
     ? PREVIEW_MILESTONE_MARKER_WIDTH
-    : getPreviewDurationPx(dayOffset, durationDays, timeline.weekWidthsPx);
+    : getPreviewUnitDurationPx(dayOffset, durationDays, timeline);
   return {
-    leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : getPreviewTimelinePx(dayOffset, timeline.weekWidthsPx),
+    leftPx: drawAsMilestonePoint ? pointPx - barWidthPx : getPreviewUnitTimelinePx(dayOffset, timeline),
     barWidthPx,
     pointPx,
   };
@@ -2856,7 +3178,7 @@ function updatePreviewTaskDrag(event) {
 
   if (mode === 'resize-start') {
     const nextStartOffset = Math.min(
-      getPreviewDayOffsetFromTimelinePx(previewDragState.startLeftPx + deltaPx, previewDragState.weekWidthsPx),
+      getPreviewUnitDayOffsetFromTimelinePx(previewDragState.startLeftPx + deltaPx, previewDragState),
       previewDragState.endDayOffset - 1,
     );
     previewDragState.currentStartOffset = nextStartOffset;
@@ -2864,16 +3186,16 @@ function updatePreviewTaskDrag(event) {
     previewDragState.dayDelta = nextStartOffset - previewDragState.startDayOffset;
   } else if (mode === 'resize-end') {
     const nextEndOffset = Math.max(
-      getPreviewDayOffsetFromTimelinePx(previewDragState.startLeftPx + previewDragState.startWidthPx + deltaPx, previewDragState.weekWidthsPx),
+      getPreviewUnitDayOffsetFromTimelinePx(previewDragState.startLeftPx + previewDragState.startWidthPx + deltaPx, previewDragState),
       previewDragState.startDayOffset + 1,
     );
     previewDragState.currentStartOffset = previewDragState.startDayOffset;
     previewDragState.currentEndOffset = nextEndOffset;
     previewDragState.dayDelta = nextEndOffset - previewDragState.endDayOffset;
   } else if (mode === 'milestone') {
-    const nextEndOffset = getPreviewDayOffsetFromTimelinePx(
+    const nextEndOffset = getPreviewUnitDayOffsetFromTimelinePx(
       previewDragState.startMarkerPointPx + deltaPx,
-      previewDragState.weekWidthsPx,
+      previewDragState,
     );
     if (previewDragState.singleDayMilestone) {
       previewDragState.currentStartOffset = nextEndOffset - 1;
@@ -2885,9 +3207,9 @@ function updatePreviewTaskDrag(event) {
       previewDragState.dayDelta = previewDragState.currentEndOffset - previewDragState.endDayOffset;
     }
   } else {
-    const nextDayOffset = getPreviewDayOffsetFromTimelinePx(
+    const nextDayOffset = getPreviewUnitDayOffsetFromTimelinePx(
       previewDragState.startLeftPx + deltaPx,
-      previewDragState.weekWidthsPx,
+      previewDragState,
     );
     const dayDelta = nextDayOffset - previewDragState.startDayOffset;
     previewDragState.currentStartOffset = previewDragState.startDayOffset + dayDelta;
@@ -2895,16 +3217,16 @@ function updatePreviewTaskDrag(event) {
     previewDragState.dayDelta = dayDelta;
   }
 
-  const snappedLeftPx = getPreviewTimelinePx(previewDragState.currentStartOffset, previewDragState.weekWidthsPx);
-  const snappedRightPx = getPreviewTimelinePx(previewDragState.currentEndOffset, previewDragState.weekWidthsPx);
+  const snappedLeftPx = getPreviewUnitTimelinePx(previewDragState.currentStartOffset, previewDragState);
+  const snappedRightPx = getPreviewUnitTimelinePx(previewDragState.currentEndOffset, previewDragState);
   const snappedWidthPx = Math.max(1, snappedRightPx - snappedLeftPx);
   previewDragState.shell.style.left = `${snappedLeftPx}px`;
   previewDragState.shell.style.width = `${snappedWidthPx}px`;
   if (previewDragState.fill) previewDragState.fill.style.width = `${snappedWidthPx}px`;
   if (previewDragState.marker) {
-    const nextPointPx = getPreviewTimelinePx(
+    const nextPointPx = getPreviewUnitTimelinePx(
       previewDragState.currentEndOffset,
-      previewDragState.weekWidthsPx,
+      previewDragState,
     );
     previewDragState.marker.style.left = `${nextPointPx + previewDragState.markerGapPx}px`;
   }
@@ -2972,7 +3294,7 @@ function cancelPreviewTaskDrag(event) {
 }
 
 function startPreviewTaskDrag(event, shell, item, metrics, timeline, marker = null, markerGapPx = 0, mode = 'move') {
-  if (!previewEditMode || timeline.unit !== 'week' || item.kind !== 'sub' || event.button !== 0) return;
+  if (!previewEditMode || !isPreviewEditableUnit(timeline.unit) || item.kind !== 'sub' || event.button !== 0) return;
   if (mode !== 'move' && mode !== 'milestone' && item.milestone) return;
   if (mode === 'milestone' && !item.milestone) return;
   if (!Number.isInteger(item.phaseIndex) || !Number.isInteger(item.taskIndex)) return;
@@ -3009,13 +3331,15 @@ function startPreviewTaskDrag(event, shell, item, metrics, timeline, marker = nu
     startLeftPx: metrics.leftPx,
     startWidthPx: metrics.barWidthPx,
     startMarkerLeftPx: marker ? Number.parseFloat(marker.style.left) || 0 : 0,
-    startMarkerPointPx: getPreviewTimelinePx(endDayOffset, timeline.weekWidthsPx),
+    startMarkerPointPx: getPreviewUnitTimelinePx(endDayOffset, timeline),
     startDayOffset,
     endDayOffset,
     currentStartOffset: startDayOffset,
     currentEndOffset: endDayOffset,
     markerPointOffset: endDayOffset,
+    unit: timeline.unit,
     weekWidthsPx: [...(timeline.weekWidthsPx || [])],
+    dayWidthsPx: [...(timeline.dayWidthsPx || [])],
     singleDayMilestone,
     dayDelta: 0,
     dragLabel,
@@ -3149,19 +3473,21 @@ function renderPreview() {
   }
 
   const unit = normalizeTimelineUnit(selectedTimelineUnit);
-  const { projectStartValue, projectEndValue, totalWeeks } = range;
+  const { projectStartValue, projectEndValue, totalDays, totalWeeks } = range;
   const rows = getPreviewRows();
   const monthColumns = unit === 'month' ? buildPreviewMonthColumns(projectStartValue, projectEndValue) : [];
+  const dayColumns = unit === 'day' ? buildPreviewDayColumns(projectStartValue, totalDays) : [];
   const weekColumns = unit === 'week' ? buildPreviewWeekColumns(projectStartValue, totalWeeks) : [];
+  const dayWidthsPx = dayColumns.map((column) => column.widthPx);
   const weekWidthsPx = weekColumns.map((column) => column.widthPx);
-  const timelineColumns = unit === 'month' ? monthColumns.length : totalWeeks;
-  const timelineWidth = unit === 'month' ? PREVIEW_MONTH_WIDTH : PREVIEW_WEEK_WIDTH;
-  const timeline = { unit, projectStartValue, monthColumns, weekWidthsPx };
+  const timelineColumns = unit === 'month' ? monthColumns.length : (unit === 'day' ? dayColumns.length : totalWeeks);
+  const timelineWidth = unit === 'month' ? PREVIEW_MONTH_WIDTH : (unit === 'day' ? PREVIEW_DAY_WIDTH : PREVIEW_WEEK_WIDTH);
+  const timeline = { unit, projectStartValue, monthColumns, dayWidthsPx, weekWidthsPx };
 
   ganttPreview.style.setProperty('--week-width', `${timelineWidth}px`);
   ganttPreview.style.gridTemplateColumns = unit === 'month'
-    ? `250px 160px repeat(${timelineColumns}, ${timelineWidth}px)`
-    : `250px 160px ${weekColumns.map((column) => `${column.widthPx}px`).join(' ')}`;
+    ? `${PREVIEW_NAME_COL_WIDTH}px ${PREVIEW_DURATION_COL_SIZE} repeat(${timelineColumns}, ${timelineWidth}px)`
+    : `${PREVIEW_NAME_COL_WIDTH}px ${PREVIEW_DURATION_COL_SIZE} ${(unit === 'day' ? dayColumns : weekColumns).map((column) => `${column.widthPx}px`).join(' ')}`;
 
   ganttPreview.append(makePreviewCell('preview-head-cell preview-phase-head', '项目阶段', '1', '1 / 4'));
   ganttPreview.append(makePreviewCell('preview-head-cell preview-duration-head', '用时', '2', '1 / 4'));
@@ -3180,6 +3506,22 @@ function renderPreview() {
       const gridColumn = `${column.monthIndex + 2}`;
       ganttPreview.append(makePreviewCell('preview-week preview-month-unit', column.label, gridColumn, '2'));
       ganttPreview.append(makePreviewCell('preview-date', `${fmtMd(column.start)}-${fmtMd(column.end)}`, gridColumn, '3'));
+    });
+  } else if (unit === 'day') {
+    getDayMonthBands(dayColumns).forEach((band) => {
+      ganttPreview.append(makePreviewCell(
+        'preview-month',
+        band.label,
+        `${band.fromDay + 2} / span ${band.toDay - band.fromDay + 1}`,
+        '1',
+      ));
+    });
+
+    dayColumns.forEach((column) => {
+      const gridColumn = `${column.dayIndex + 2}`;
+      const weekendClass = column.isWeekend ? ' preview-day-weekend' : '';
+      ganttPreview.append(makePreviewCell(`preview-week preview-day-number${weekendClass}`, column.dayLabel, gridColumn, '2'));
+      ganttPreview.append(makePreviewCell(`preview-date preview-day-weekday${weekendClass}`, column.weekdayLabel, gridColumn, '3'));
     });
   } else {
     getMonthBands(projectStartValue, totalWeeks).forEach((band) => {
@@ -3351,7 +3693,7 @@ function renderEditorEmptyState() {
   empty.append(
     makeElement('span', 'eyebrow', 'Plan Console'),
     makeElement('h3', '', '当前计划暂无阶段'),
-    makeElement('p', '', '点击右上角“添加阶段”开始编制，或通过初始化菜单恢复示例与模板。'),
+    makeElement('p', '', '点击右上角“添加阶段”开始编制项目计划。'),
   );
   const action = makeElement('button', 'secondary-btn editor-empty-action', '+ 添加阶段');
   action.type = 'button';
@@ -3364,6 +3706,7 @@ function render() {
   state.phases.forEach(normalizeTaskDates);
   syncProjectStart();
   state.title = state.title || DEFAULT_TITLE;
+  renderEditorEntryContext();
   if (!isBreakdownTargetValid()) {
     breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
   }
@@ -3586,6 +3929,7 @@ function toPayload() {
   return {
     title: state.title,
     projectStart: getEarliestPhaseStart() || undefined,
+    timelineUnit: normalizeTimelineUnit(selectedTimelineUnit),
     phases: state.phases.map((phase) => ({
       name: phase.name,
       start: phase.start,
@@ -3657,7 +4001,7 @@ function normalizeImportedProject(project) {
   return imported;
 }
 
-function applyImportedProject(project) {
+function applyImportedProject(project, entryContext = null) {
   state = normalizeImportedProject(project);
   breakdownOpen = { phaseIndex: -1, taskIndex: -1 };
   focusedPhaseIndex = null;
@@ -3665,6 +4009,7 @@ function applyImportedProject(project) {
   focusPhaseTimer = null;
   expandedPhaseIndexes = new Set(state.phases.map((_, index) => index));
   previewZoomMode = 'fit';
+  setEditorEntryContext(entryContext);
   showEditor();
   render();
   requestAnimationFrame(() => applyPreviewZoom());
@@ -3705,7 +4050,7 @@ async function importExcel(file) {
       throw new Error(payload.error || `Excel 导入失败：${response.status}`);
     }
 
-    applyImportedProject(payload.project || payload);
+    applyImportedProject(payload.project || payload, makeExcelEntryContext());
     setStatus(`${excelImportLabels.done} 共 ${state.phases.length} 个阶段、${getProjectTaskCount()} 项任务。`, 'ok');
   } catch (error) {
     setStatus(error instanceof Error ? error.message : String(error), 'error');
@@ -3809,12 +4154,6 @@ if (homeBlankBtn) {
   homeBlankBtn.addEventListener('focus', () => setHomeTemplateActive(homeBlankBtn));
   homeBlankBtn.addEventListener('click', () => openTemplateSetup('', 'blank'));
 }
-if (homeExcelCardBtn) {
-  homeExcelCardBtn.addEventListener('pointerenter', () => setHomeTemplateActive(homeExcelCardBtn));
-  homeExcelCardBtn.addEventListener('mouseenter', () => setHomeTemplateActive(homeExcelCardBtn));
-  homeExcelCardBtn.addEventListener('focus', () => setHomeTemplateActive(homeExcelCardBtn));
-  homeExcelCardBtn.addEventListener('click', () => importExcelInput?.click());
-}
 if (setupBackBtn) setupBackBtn.addEventListener('click', showHome);
 if (setupCancelBtn) setupCancelBtn.addEventListener('click', showHome);
 if (setupGenerateBtn) setupGenerateBtn.addEventListener('click', applySetupProject);
@@ -3829,38 +4168,6 @@ if (setupProjectStartInput) {
   });
 }
 
-if (clearBtn) clearBtn.addEventListener('click', () => {
-  closeInitMenu();
-  state = {
-    title: state.title || defaultProject.title,
-    projectStart: '',
-    phases: [],
-  };
-  focusedPhaseIndex = null;
-  if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
-  focusPhaseTimer = null;
-  expandedPhaseIndexes.clear();
-  previewZoomMode = 'fit';
-  render();
-  setStatus('已清空计划，可重新添加阶段。', 'ok');
-});
-
-if (resetBtn) resetBtn.addEventListener('click', () => {
-  closeInitMenu();
-  state = structuredClone(defaultProject);
-  focusedPhaseIndex = null;
-  if (focusPhaseTimer) window.clearTimeout(focusPhaseTimer);
-  focusPhaseTimer = null;
-  expandedPhaseIndexes.clear();
-  showEditor();
-  render();
-  setStatus('已恢复示例数据。');
-});
-
-if (templateLibraryBtn) templateLibraryBtn.addEventListener('click', () => {
-  closeInitMenu();
-  openTemplateSetup(selectedTemplateId || projectTemplates[0]?.id || '', 'template');
-});
 if (templateBackdrop) templateBackdrop.addEventListener('click', closeTemplateDialog);
 if (cancelTemplateBtn) cancelTemplateBtn.addEventListener('click', closeTemplateDialog);
 if (closeTemplateDialogBtn) closeTemplateDialogBtn.addEventListener('click', closeTemplateDialog);
@@ -3874,17 +4181,6 @@ if (templateStartInput) {
     }
   });
 }
-
-if (initMenuBtn) initMenuBtn.addEventListener('click', (event) => {
-  event.stopPropagation();
-  toggleInitMenu();
-});
-if (initMenuPanel) initMenuPanel.addEventListener('click', (event) => event.stopPropagation());
-document.addEventListener('click', (event) => {
-  if (!initMenu?.classList.contains('open')) return;
-  if (event.target instanceof Node && initMenu.contains(event.target)) return;
-  closeInitMenu();
-});
 
 if (ioMenuBtn) ioMenuBtn.addEventListener('click', (event) => {
   event.stopPropagation();
@@ -3950,9 +4246,9 @@ function closeGanttModal() {
   ganttModal.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('gantt-modal-visible');
 }
-timelineUnitButtons.forEach((button) => {
-  button.addEventListener('click', () => setTimelineUnit(button.dataset.ganttUnit, true));
-});
+if (timelineUnitSelect) {
+  timelineUnitSelect.addEventListener('change', () => setTimelineUnit(timelineUnitSelect.value, true));
+}
 updateTimelineUnitControls();
 
 if (previewGanttBtn) previewGanttBtn.addEventListener('click', openGanttModal);
@@ -3971,8 +4267,7 @@ if (ganttModal) {
 // ESC key closes modal
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
-    if (initMenu && initMenu.classList.contains('open')) closeInitMenu();
-    else if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
+    if (ioMenu && ioMenu.classList.contains('open')) closeIoMenu();
     else if (templateDialog && templateDialog.classList.contains('open')) closeTemplateDialog();
     else if (saveVersionDialog && saveVersionDialog.classList.contains('open')) closeSaveVersionDialog();
     else if (versionHistoryDrawer && versionHistoryDrawer.classList.contains('open')) closeVersionHistory();
