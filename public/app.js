@@ -785,8 +785,8 @@ function isBreakdownTargetValid() {
 }
 
 function normalizeSubtaskDates(subtask, parentTask) {
-  subtask.start = clampIsoDate(subtask.start || parentTask?.start || '', parentTask?.start, parentTask?.end);
-  subtask.end = clampIsoDate(subtask.end || subtask.start || parentTask?.end || '', maxIsoDate([parentTask?.start, subtask.start]), parentTask?.end);
+  subtask.start = clampIsoDate(subtask.start || parentTask?.start || '', parentTask?.start, '');
+  subtask.end = clampIsoDate(subtask.end || subtask.start || parentTask?.end || '', maxIsoDate([parentTask?.start, subtask.start]), '');
   if (isIsoDate(subtask.start) && isIsoDate(subtask.end) && compareIsoDates(subtask.end, subtask.start) < 0) {
     subtask.end = subtask.start;
   }
@@ -917,29 +917,36 @@ function bindSubtaskRow(row, phase, task, taskIndex, subtask, subIndex) {
     }
     if (field === 'start') {
       input.min = task.start || '';
-      input.max = task.end || '';
+      input.max = '';
     }
     if (field === 'end') {
       input.min = maxIsoDate([task.start, subtask.start]);
-      input.max = task.end || '';
+      input.max = '';
     }
     input.value = subtask[field] ?? '';
     const eventName = input.tagName === 'SELECT' ? 'change' : 'input';
     input.addEventListener(eventName, () => {
       if (field === 'start') {
-        subtask.start = clampIsoDate(input.value, task.start, task.end);
+        subtask.start = clampIsoDate(input.value, task.start, '');
         input.value = subtask.start;
-        subtask.end = clampIsoDate(subtask.end, maxIsoDate([task.start, subtask.start]), task.end);
+        subtask.end = clampIsoDate(subtask.end, maxIsoDate([task.start, subtask.start]), '');
         const endInput = row.querySelector('[data-field="end"]');
         if (endInput) {
           endInput.min = maxIsoDate([task.start, subtask.start]);
           endInput.value = subtask.end;
         }
       } else if (field === 'end') {
-        subtask.end = clampIsoDate(input.value, maxIsoDate([task.start, subtask.start]), task.end);
+        subtask.end = clampIsoDate(input.value, maxIsoDate([task.start, subtask.start]), '');
         input.value = subtask.end;
       } else {
         subtask[field] = input.value;
+      }
+      if (field === 'start' || field === 'end') {
+        syncTaskEndFromSubtasks(task);
+        ensurePhaseCoversTask(phase, task);
+        syncProjectStart();
+        render();
+        return;
       }
       if (field === 'status') {
         row.style.setProperty('--status-color', subtaskStatusColors[input.value] || '#64748b');
@@ -3598,8 +3605,42 @@ function syncPhaseStartFromTasks(phase) {
   return earliestTaskStart;
 }
 
+function getLatestSubtaskEnd(task) {
+  return maxIsoDate((Array.isArray(task?.subtasks) ? task.subtasks : [])
+    .map((subtask) => subtask.end || subtask.start));
+}
+
+function syncTaskEndFromSubtasks(task) {
+  const latestSubtaskEnd = getLatestSubtaskEnd(task);
+  if (!latestSubtaskEnd) return false;
+  if (!isIsoDate(task.end) || compareIsoDates(latestSubtaskEnd, task.end) > 0) {
+    task.end = latestSubtaskEnd;
+    task.endTouched = true;
+    return true;
+  }
+  return false;
+}
+
+function getLatestTaskEnd(phase) {
+  return maxIsoDate((Array.isArray(phase?.tasks) ? phase.tasks : [])
+    .map((task) => maxIsoDate([task.end, task.start, getLatestSubtaskEnd(task)])));
+}
+
+function syncPhaseEndFromTasks(phase) {
+  const latestTaskEnd = getLatestTaskEnd(phase);
+  if (latestTaskEnd && (!isIsoDate(phase.end) || compareIsoDates(latestTaskEnd, phase.end) > 0)) {
+    phase.end = latestTaskEnd;
+  }
+  normalizePhaseDates(phase);
+  return latestTaskEnd;
+}
+
 function getDefaultTaskEnd(start, phase) {
-  return clampIsoDate(addDaysIso(start, DEFAULT_TASK_DAYS), start, phase.end);
+  const defaultEnd = addDaysIso(start, DEFAULT_TASK_DAYS);
+  if (isIsoDate(phase?.end) && compareIsoDates(start, phase.end) <= 0) {
+    return clampIsoDate(defaultEnd, start, phase.end);
+  }
+  return defaultEnd;
 }
 
 function getNewTaskDates(phase) {
@@ -3618,7 +3659,7 @@ function normalizeTaskDates(phase) {
   normalizePhaseDates(phase);
   phase.tasks.forEach((task) => {
     if (isIsoDate(task.start)) {
-      task.start = clampIsoDate(task.start, '', phase.end);
+      task.start = clampIsoDate(task.start, '', '');
     } else if (isIsoDate(phase.start)) {
       task.start = phase.start;
     }
@@ -3632,14 +3673,18 @@ function normalizeTaskDates(phase) {
     }
 
     if (isIsoDate(task.end)) {
-      task.end = clampIsoDate(task.end, phase.start, phase.end);
+      task.end = clampIsoDate(task.end, phase.start, '');
     }
 
     if (isIsoDate(task.start) && isIsoDate(task.end) && compareIsoDates(task.end, task.start) < 0) {
       task.end = task.start;
     }
+
+    normalizeTaskSubtasks(task);
+    syncTaskEndFromSubtasks(task);
   });
   syncPhaseStartFromTasks(phase);
+  syncPhaseEndFromTasks(phase);
   sortTasksByStart(phase);
 }
 
@@ -3824,50 +3869,65 @@ function render() {
           });
         } else if (field === 'start') {
           input.min = '';
-          input.max = phase.end || '';
+          input.max = '';
           input.value = task.start || '';
           input.addEventListener('input', () => {
-            task.start = clampIsoDate(input.value, '', phase.end);
+            task.start = clampIsoDate(input.value, '', '');
             if (input.value !== task.start) input.value = task.start;
             if (task.endTouched === false) {
               task.end = getDefaultTaskEnd(task.start, phase);
             } else {
-              task.end = clampIsoDate(task.end, task.start, phase.end);
+              task.end = clampIsoDate(task.end, task.start, '');
             }
+            normalizeTaskSubtasks(task);
+            syncTaskEndFromSubtasks(task);
             syncPhaseStartFromTasks(phase);
+            syncPhaseEndFromTasks(phase);
             const phaseStartInput = phaseNode.querySelector('.phase-fields [data-field="start"]');
             if (phaseStartInput) phaseStartInput.value = phase.start || '';
+            const phaseEndInput = phaseNode.querySelector('.phase-fields [data-field="end"]');
+            if (phaseEndInput) phaseEndInput.value = phase.end || '';
             syncProjectStart();
             updateHolidayStat(taskNode, task);
             renderProjectStats();
             renderRightPane();
           });
           input.addEventListener('change', () => {
-            task.start = clampIsoDate(input.value, '', phase.end);
+            task.start = clampIsoDate(input.value, '', '');
             if (task.endTouched === false) {
               task.end = getDefaultTaskEnd(task.start, phase);
             } else {
-              task.end = clampIsoDate(task.end, task.start, phase.end);
+              task.end = clampIsoDate(task.end, task.start, '');
             }
+            normalizeTaskSubtasks(task);
+            syncTaskEndFromSubtasks(task);
             syncPhaseStartFromTasks(phase);
+            syncPhaseEndFromTasks(phase);
             sortTasksByStart(phase);
             render();
           });
         } else if (field === 'end') {
           input.min = task.start || phase.start || '';
-          input.max = phase.end || '';
+          input.max = '';
           input.value = task.end || '';
           input.addEventListener('input', () => {
-            task.end = clampIsoDate(input.value, task.start || phase.start, phase.end);
+            task.end = clampIsoDate(input.value, task.start || phase.start, '');
             if (input.value !== task.end) input.value = task.end;
             task.endTouched = true;
+            syncTaskEndFromSubtasks(task);
+            input.value = task.end || '';
+            syncPhaseEndFromTasks(phase);
+            const phaseEndInput = phaseNode.querySelector('.phase-fields [data-field="end"]');
+            if (phaseEndInput) phaseEndInput.value = phase.end || '';
             updateHolidayStat(taskNode, task);
             renderProjectStats();
             renderRightPane();
           });
           input.addEventListener('change', () => {
-            task.end = clampIsoDate(input.value, task.start || phase.start, phase.end);
+            task.end = clampIsoDate(input.value, task.start || phase.start, '');
             task.endTouched = true;
+            syncTaskEndFromSubtasks(task);
+            syncPhaseEndFromTasks(phase);
             render();
           });
         } else if (field === 'status') {
